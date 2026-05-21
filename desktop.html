@@ -1,0 +1,4733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NODE — A Quiet Place</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Firebase SDK (compat builds, loaded synchronously before the main script) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<!-- Google Custom Search Engine (explicit render so we can render per browser tab) -->
+<script>window.__gcse = { parsetags: 'explicit' };</script>
+<script async src="https://cse.google.com/cse.js?cx=c3720eb9b58dd4d8f"></script>
+<style>
+  /* ============================================================
+     NODE OS  —  v0.1
+     Aesthetic: Mirror's Edge minimalism + Asiimov orange accent
+                + chunky 95/98 window chrome, reinterpreted clean
+     ============================================================ */
+
+  :root {
+    /* Museum Quiet — warm cream + muted gold + soft brown */
+    --bg:        #ECE6D7;       /* warm cream background */
+    --bg-2:      #F2EDDE;       /* lighter cream */
+    --panel:     #F8F4E9;       /* near-white cream */
+    --ink:       #2A241B;       /* warm dark brown (was black) */
+    --ink-2:     #786C58;       /* muted warm gray */
+    --line:      #C8BCA0;       /* warm tan line */
+    --accent:    #B89A5C;       /* muted gold (was Asiimov orange) */
+    --accent-2:  #8B4A3F;       /* deep terracotta */
+    --good:      #6F8A6F;       /* sage green */
+    --shadow:    0 1px 0 rgba(42,36,27,0.10), 0 6px 24px rgba(42,36,27,0.08);
+    --serif:     'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+    --sans:      'Inter', 'Helvetica Neue', Arial, sans-serif;
+    --mono:      'IBM Plex Mono', 'Consolas', 'SF Mono', 'Menlo', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: var(--sans);
+    color: var(--ink);
+    background: var(--bg);
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Desktop background ---------- */
+  #desktop {
+    position: fixed;
+    inset: 0 0 36px 0;
+    background:
+      linear-gradient(135deg, transparent 49.6%, rgba(184,154,92,0.07) 49.6%, rgba(184,154,92,0.07) 50.4%, transparent 50.4%) 0 0/120px 120px,
+      linear-gradient(0deg, rgba(42,36,27,0.03) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, rgba(42,36,27,0.03) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(180deg, #ECE6D7 0%, #DBD3BE 100%);
+    overflow: hidden;
+  }
+
+  /* Faint corner watermark */
+  #desktop::before {
+    content: "NODE // v0.1";
+    position: absolute;
+    bottom: 16px;
+    right: 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgba(0,0,0,0.25);
+  }
+  #desktop::after {
+    content: "";
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    width: 64px;
+    height: 4px;
+    background: var(--accent);
+    box-shadow: 0 10px 0 var(--ink);
+  }
+
+  /* ---------- Desktop icons (round, floating, customizable) ---------- */
+  .icon-grid {
+    position: absolute;
+    top: 56px;
+    left: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .icon {
+    width: 96px;
+    padding: 10px 6px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 18px;
+    transition: background 0.2s, transform 0.15s;
+    user-select: none;
+  }
+  .icon:hover { background: rgba(248,244,233,0.55); }
+  .icon:hover .glyph { transform: translateY(-2px) scale(1.04); box-shadow: 0 8px 22px rgba(42,36,27,0.16); }
+  .icon.active { background: rgba(184,154,92,0.22); }
+  .icon .glyph {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 8px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    color: var(--ink);
+    box-shadow: 0 4px 14px rgba(42,36,27,0.10), inset 0 1px 0 rgba(255,255,255,0.6);
+    animation: floatY 5s ease-in-out infinite;
+    animation-delay: var(--bob-delay, 0s);
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  .icon .glyph::after {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border-radius: 50%;
+    border: 1px solid rgba(184,154,92,0.18);
+    pointer-events: none;
+  }
+  .icon .label {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.2px;
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+  @keyframes floatY {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-5px); }
+  }
+
+  /* Icon picker (right-click → change icon) */
+  .icon-picker {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .icon-opt {
+    aspect-ratio: 1;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+    padding: 0;
+  }
+  .icon-opt:hover {
+    background: var(--accent);
+    transform: scale(1.08);
+  }
+  .icon-opt.current {
+    background: var(--accent);
+    border-color: var(--ink);
+  }
+
+  /* ---------- Windows ---------- */
+  .window {
+    position: absolute;
+    min-width: 320px;
+    min-height: 200px;
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+  }
+  .window.focused { box-shadow: 0 2px 0 var(--ink), 0 10px 32px rgba(0,0,0,0.28); }
+  .titlebar {
+    height: 30px;
+    background: var(--ink);
+    color: var(--panel);
+    display: flex;
+    align-items: center;
+    padding: 0 0 0 10px;
+    cursor: grab;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    user-select: none;
+  }
+  .titlebar:active { cursor: grabbing; }
+  .titlebar .accent-bar {
+    width: 14px; height: 14px;
+    background: var(--accent);
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+  .titlebar .title { flex: 1; text-transform: uppercase; }
+  .window:not(.focused) .titlebar { background: #555; }
+  .window:not(.focused) .titlebar .accent-bar { background: #999; }
+
+  .win-buttons { display: flex; height: 100%; }
+  .win-btn {
+    width: 36px; height: 100%;
+    border: none;
+    border-left: 1px solid #333;
+    background: var(--ink);
+    color: var(--panel);
+    font-family: var(--mono);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .win-btn:hover { background: #2a2a2a; }
+  .win-btn.close:hover { background: var(--accent); color: var(--ink); }
+
+  .window-body {
+    flex: 1;
+    overflow: hidden;
+    background: var(--panel);
+    display: flex;
+    min-height: 0;
+  }
+
+  /* ---------- Taskbar ---------- */
+  #taskbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 36px;
+    background: var(--ink);
+    color: var(--panel);
+    display: flex;
+    align-items: stretch;
+    border-top: 1.5px solid var(--ink);
+    z-index: 9999;
+  }
+  #start-btn {
+    background: var(--accent);
+    color: var(--ink);
+    border: none;
+    padding: 0 18px;
+    font-family: var(--mono);
+    font-weight: bold;
+    font-size: 13px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    border-right: 1.5px solid var(--ink);
+  }
+  #start-btn:hover { background: var(--accent-2); color: var(--panel); }
+  #start-btn::before { content: "▸ "; }
+
+  #task-list {
+    flex: 1;
+    display: flex;
+    align-items: stretch;
+    padding: 4px 6px;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  .task-item {
+    padding: 0 14px;
+    background: #1f1f1f;
+    border: 1px solid #333;
+    color: var(--panel);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .task-item.active { background: var(--panel); color: var(--ink); border-color: var(--accent); }
+  .task-item:hover { border-color: var(--accent); }
+
+  #tray {
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    border-left: 1px solid #333;
+  }
+  #tray .dot { width: 8px; height: 8px; background: var(--good); border-radius: 50%; box-shadow: 0 0 6px var(--good); }
+  #clock { color: var(--accent); }
+
+  /* ---------- Start menu ---------- */
+  #start-menu {
+    position: fixed;
+    bottom: 36px;
+    left: 0;
+    width: 260px;
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    box-shadow: 4px -4px 0 var(--ink), 0 -10px 30px rgba(0,0,0,0.25);
+    display: none;
+    z-index: 10000;
+    flex-direction: column;
+  }
+  #start-menu.open { display: flex; }
+  #start-menu .header {
+    background: var(--ink);
+    color: var(--accent);
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 3px;
+  }
+  #start-menu .item {
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #start-menu .item:hover { background: var(--accent); color: var(--panel); }
+  #start-menu .item .ic {
+    width: 22px; height: 22px;
+    border: 1.5px solid var(--ink);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 11px;
+    background: var(--bg-2);
+  }
+  #start-menu .item:hover .ic { background: var(--panel); color: var(--ink); }
+
+  /* ============================================================
+     PAINT APP
+     ============================================================ */
+  .paint-app { display: flex; flex: 1; min-height: 0; }
+  .paint-toolbar {
+    width: 200px;
+    background: var(--bg-2);
+    border-right: 1.5px solid var(--ink);
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    overflow-y: auto;
+  }
+  .tool-group { display: flex; flex-direction: column; gap: 6px; }
+  .tool-group .label {
+    font-size: 10px;
+    color: var(--ink-2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--ink);
+  }
+  .tool-row { display: flex; gap: 6px; }
+  .tool-btn {
+    flex: 1;
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    padding: 8px 6px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--ink);
+    box-shadow: 2px 2px 0 var(--ink);
+    transition: transform 0.05s, box-shadow 0.05s;
+  }
+  .tool-btn:hover { background: var(--bg); }
+  .tool-btn:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--ink); }
+  .tool-btn.active {
+    background: var(--ink);
+    color: var(--accent);
+  }
+  .tool-btn.danger { background: var(--panel); }
+  .tool-btn.danger:hover { background: var(--accent); color: var(--panel); }
+  .tool-btn.primary { background: var(--accent); }
+  .tool-btn.primary:hover { background: var(--ink); color: var(--accent); }
+
+  .color-row { display: flex; align-items: center; gap: 8px; }
+  .color-swatch {
+    width: 40px; height: 40px;
+    border: 1.5px solid var(--ink);
+    box-shadow: 2px 2px 0 var(--ink);
+    cursor: pointer;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+  }
+  .color-swatch input[type="color"] {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    border: none;
+  }
+  .color-hex {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+  }
+
+  .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  .swatch {
+    aspect-ratio: 1;
+    border: 1px solid var(--ink);
+    cursor: pointer;
+  }
+  .swatch:hover { transform: scale(1.1); }
+
+  .size-row { display: flex; flex-direction: column; gap: 6px; }
+  .size-row .size-val {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent-2);
+    font-weight: bold;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--ink);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px; height: 16px;
+    background: var(--accent);
+    border: 1.5px solid var(--ink);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px; height: 16px;
+    background: var(--accent);
+    border: 1.5px solid var(--ink);
+    cursor: pointer;
+  }
+
+  .paint-canvas-wrap {
+    flex: 1;
+    background:
+      linear-gradient(45deg, #ddd 25%, transparent 25%) 0 0/16px 16px,
+      linear-gradient(-45deg, #ddd 25%, transparent 25%) 0 0/16px 16px,
+      linear-gradient(45deg, transparent 75%, #ddd 75%) 0 0/16px 16px,
+      linear-gradient(-45deg, transparent 75%, #ddd 75%) 0 0/16px 16px,
+      #eee;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+  }
+  #paint-canvas {
+    background: #fff;
+    border: 1.5px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    cursor: crosshair;
+    display: block;
+  }
+  #paint-canvas.eraser { cursor: cell; }
+
+  /* Status bar inside Paint */
+  .paint-status {
+    height: 22px;
+    background: var(--ink);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .paint-status span.dim { color: rgba(255,255,255,0.5); }
+
+  /* ============================================================
+     FILE EXPLORER
+     ============================================================ */
+  .fx-app { display: flex; flex: 1; min-height: 0; flex-direction: column; }
+  .fx-toolbar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px;
+    background: var(--bg-2);
+    border-bottom: 1.5px solid var(--ink);
+  }
+  .fx-tbtn {
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    padding: 5px 10px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    box-shadow: 2px 2px 0 var(--ink);
+    color: var(--ink);
+  }
+  .fx-tbtn:hover { background: var(--bg); }
+  .fx-tbtn:active { transform: translate(2px,2px); box-shadow: 0 0 0 var(--ink); }
+  .fx-tbtn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .fx-tbtn.primary { background: var(--accent); }
+  .fx-addr {
+    flex: 1;
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    padding: 5px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent-2);
+    letter-spacing: 1px;
+  }
+  .fx-body { display: flex; flex: 1; min-height: 0; }
+  .fx-side {
+    width: 160px;
+    background: var(--bg-2);
+    border-right: 1.5px solid var(--ink);
+    padding: 10px 0;
+    font-family: var(--mono);
+    font-size: 11px;
+    overflow-y: auto;
+  }
+  .fx-side .grp { padding: 6px 12px 4px; font-size: 9px; color: var(--ink-2); letter-spacing: 2px; }
+  .fx-side .item {
+    padding: 6px 12px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .fx-side .item:hover { background: rgba(255,106,26,0.15); }
+  .fx-side .item.active { border-left-color: var(--accent); background: var(--panel); color: var(--ink); font-weight: bold; }
+  .fx-side .item .dot { width: 6px; height: 6px; background: var(--accent); display: inline-block; }
+  .fx-main {
+    flex: 1;
+    background: var(--panel);
+    padding: 14px;
+    overflow-y: auto;
+    min-width: 0;
+  }
+  .fx-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+    align-content: start;
+  }
+  .fx-item {
+    text-align: center;
+    cursor: pointer;
+    padding: 8px 4px;
+    border: 1px dashed transparent;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    word-break: break-all;
+    user-select: none;
+  }
+  .fx-item:hover { background: var(--bg-2); border-color: var(--ink-2); }
+  .fx-item.active { background: rgba(255,106,26,0.18); border-color: var(--accent); border-style: solid; }
+  .fx-item .ico {
+    width: 56px; height: 56px;
+    margin: 0 auto 6px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 3px 10px rgba(42,36,27,0.10), inset 0 1px 0 rgba(255,255,255,0.6);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .fx-item:hover .ico {
+    transform: translateY(-1px) scale(1.06);
+    box-shadow: 0 5px 16px rgba(42,36,27,0.16), inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .fx-item.folder .ico { background: var(--bg-2); }
+  .fx-item.file .ico { color: var(--ink); }
+  .fx-empty {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    padding: 40px 20px;
+    letter-spacing: 2px;
+  }
+  .fx-status {
+    height: 22px;
+    background: var(--ink);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .fx-status .dim { color: rgba(255,255,255,0.55); }
+
+  /* Context menu */
+  .ctx-menu {
+    position: fixed;
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    z-index: 100000;
+    font-family: var(--mono);
+    font-size: 11px;
+    min-width: 170px;
+  }
+  .ctx-menu .citem {
+    padding: 8px 14px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .ctx-menu .citem:hover { background: var(--accent); color: var(--panel); }
+  .ctx-menu .citem.disabled { opacity: 0.35; pointer-events: none; }
+  .ctx-menu .sep { border-top: 1px solid var(--ink); height: 0; margin: 2px 0; }
+
+  /* ============================================================
+     NOTES
+     ============================================================ */
+  .notes-app { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .notes-toolbar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px;
+    background: var(--bg-2);
+    border-bottom: 1.5px solid var(--ink);
+  }
+  .notes-name {
+    flex: 1;
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    padding: 5px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink);
+    letter-spacing: 1px;
+    outline: none;
+  }
+  .notes-name:focus { border-color: var(--accent); }
+  .notes-area {
+    flex: 1;
+    width: 100%;
+    border: none;
+    outline: none;
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--ink);
+    background: var(--panel);
+    resize: none;
+  }
+  .notes-status {
+    height: 22px;
+    background: var(--ink);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* ============================================================
+     IMAGE VIEWER
+     ============================================================ */
+  .iv-app { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .iv-toolbar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px;
+    background: var(--bg-2);
+    border-bottom: 1.5px solid var(--ink);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink);
+    letter-spacing: 1px;
+  }
+  .iv-canvas {
+    flex: 1;
+    background:
+      linear-gradient(45deg, #ddd 25%, transparent 25%) 0 0/16px 16px,
+      linear-gradient(-45deg, #ddd 25%, transparent 25%) 0 0/16px 16px,
+      linear-gradient(45deg, transparent 75%, #ddd 75%) 0 0/16px 16px,
+      linear-gradient(-45deg, transparent 75%, #ddd 75%) 0 0/16px 16px,
+      #eee;
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .iv-canvas img {
+    max-width: 100%;
+    max-height: 100%;
+    border: 1.5px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    background: #fff;
+  }
+
+  /* ============================================================
+     MODAL (NODE-styled alert/prompt/confirm)
+     ============================================================ */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 50000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+  }
+  .modal {
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink), 0 12px 40px rgba(0,0,0,0.3);
+    min-width: 340px;
+    max-width: 520px;
+    animation: modalIn 0.12s ease-out;
+  }
+  @keyframes modalIn {
+    from { transform: translateY(-8px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-title {
+    background: var(--ink);
+    color: var(--panel);
+    padding: 8px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+  }
+  .modal-title::before {
+    content: "";
+    width: 10px; height: 10px;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .modal-body {
+    padding: 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ink);
+    white-space: pre-wrap;
+  }
+  .modal-body input {
+    width: 100%;
+    margin-top: 12px;
+    padding: 7px 10px;
+    border: 1.5px solid var(--ink);
+    background: var(--bg-2);
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .modal-body input:focus { border-color: var(--accent); background: var(--panel); }
+  .modal-actions {
+    padding: 10px 14px;
+    background: var(--bg-2);
+    border-top: 1.5px solid var(--ink);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .modal-actions button {
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    box-shadow: 2px 2px 0 var(--ink);
+    padding: 6px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .modal-actions button:hover { background: var(--bg); }
+  .modal-actions button:active { transform: translate(2px,2px); box-shadow: 0 0 0 var(--ink); }
+  .modal-actions button.primary { background: var(--accent); }
+  .modal-actions button.primary:hover { background: var(--ink); color: var(--accent); }
+  .modal-actions button.danger:hover { background: var(--accent); color: var(--panel); }
+
+  /* ============================================================
+     USER CHIP (taskbar profile selector)
+     ============================================================ */
+  #user-chip {
+    background: #1a1a1a;
+    color: var(--panel);
+    border: none;
+    border-right: 1.5px solid var(--ink);
+    padding: 0 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+  }
+  #user-chip:hover { background: #2a2a2a; }
+  #user-chip.open { background: var(--panel); color: var(--ink); }
+  #user-chip .ch-dot {
+    width: 10px; height: 10px;
+    background: var(--accent);
+    box-shadow: 0 0 0 1px var(--panel);
+    flex-shrink: 0;
+  }
+  #user-chip.open .ch-dot { box-shadow: 0 0 0 1px var(--ink); }
+  #user-chip .ch-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #user-chip .ch-arrow {
+    color: var(--accent);
+    font-size: 9px;
+    margin-left: 4px;
+    transition: transform 0.15s;
+  }
+  #user-chip.open .ch-arrow { transform: rotate(180deg); color: var(--ink); }
+
+  /* ============================================================
+     INSTANCES POPUP
+     ============================================================ */
+  #instances-popup {
+    position: fixed;
+    bottom: 36px;
+    left: 0;
+    width: 320px;
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    box-shadow: 4px -4px 0 var(--ink), 0 -10px 30px rgba(0,0,0,0.25);
+    display: none;
+    z-index: 10000;
+    flex-direction: column;
+    font-family: var(--mono);
+    /* offset to align with user-chip */
+    transform: translateX(0);
+  }
+  #instances-popup.open { display: flex; }
+  #instances-popup .ip-header {
+    background: var(--ink);
+    color: var(--accent);
+    padding: 10px 14px;
+    font-size: 12px;
+    letter-spacing: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #instances-popup .ip-new {
+    background: var(--accent);
+    color: var(--ink);
+    border: 1.5px solid var(--accent);
+    padding: 3px 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  #instances-popup .ip-new:hover { background: var(--panel); }
+  #instances-popup .ip-list {
+    max-height: 360px;
+    overflow-y: auto;
+    background: var(--bg-2);
+  }
+  .ip-item {
+    padding: 12px 14px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+    position: relative;
+  }
+  .ip-item:hover { background: var(--panel); }
+  .ip-item.active {
+    background: var(--panel);
+    border-left: 4px solid var(--accent);
+    padding-left: 10px;
+    cursor: default;
+  }
+  .ip-item .ip-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ip-item .ip-dot {
+    width: 14px; height: 14px;
+    background: var(--accent);
+    border: 1.5px solid var(--ink);
+    flex-shrink: 0;
+  }
+  .ip-item .ip-name {
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    color: var(--ink);
+    text-transform: uppercase;
+    font-weight: bold;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ip-item .ip-tag {
+    background: var(--ink);
+    color: var(--accent);
+    padding: 2px 6px;
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .ip-item .ip-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .ip-item .ip-act {
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    cursor: pointer;
+  }
+  .ip-item .ip-act:hover { background: var(--accent); }
+  .ip-item .ip-act.danger:hover { background: #E53935; color: var(--panel); }
+  .ip-item .ip-apps {
+    margin-top: 6px;
+    padding-left: 24px;
+    font-size: 10px;
+    color: var(--ink-2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .ip-item .ip-apps .app-tag {
+    display: inline-block;
+    background: var(--bg);
+    border: 1px solid var(--ink);
+    padding: 1px 6px;
+    margin-right: 4px;
+    color: var(--ink);
+  }
+  .ip-item .ip-apps .none { color: var(--ink-2); opacity: 0.6; }
+  #instances-popup .ip-footer {
+    background: var(--ink);
+    color: var(--panel);
+    padding: 6px 14px;
+    font-size: 9px;
+    letter-spacing: 2px;
+    display: flex;
+    justify-content: space-between;
+  }
+  #instances-popup .ip-footer .dim { color: rgba(255,255,255,0.55); }
+
+  /* Create-instance color picker */
+  .ci-colors {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .ci-color {
+    aspect-ratio: 1;
+    border: 1.5px solid var(--ink);
+    cursor: pointer;
+    position: relative;
+  }
+  .ci-color.sel::after {
+    content: "✓";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--panel);
+    font-weight: bold;
+    font-size: 14px;
+    text-shadow: 0 0 2px rgba(0,0,0,0.7);
+  }
+
+  /* ============================================================
+     SPECTATOR BANNER
+     ============================================================ */
+  #spec-banner {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--accent);
+    color: var(--ink);
+    padding: 8px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    z-index: 99998;
+    display: none;
+    align-items: center;
+    gap: 14px;
+    justify-content: center;
+    border-bottom: 1.5px solid var(--ink);
+    box-shadow: 0 2px 0 var(--ink);
+  }
+  #spec-banner.show { display: flex; }
+  #spec-banner .sb-dot {
+    width: 10px; height: 10px;
+    background: var(--ink);
+    animation: pulseDot 1.2s infinite;
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  #spec-banner button {
+    margin-left: auto;
+    background: var(--ink);
+    color: var(--accent);
+    border: none;
+    padding: 4px 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  #spec-banner button:hover { background: var(--panel); color: var(--ink); }
+
+  /* ============================================================
+     CUSTOM CURSOR LABEL
+     ============================================================ */
+  #me-cursor {
+    position: fixed;
+    pointer-events: none;
+    z-index: 999999;
+    transform: translate(12px, 12px);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    display: none;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 7px;
+    background: var(--ink);
+    color: var(--panel);
+    white-space: nowrap;
+    box-shadow: 2px 2px 0 var(--accent);
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  #me-cursor.show { display: flex; }
+  #me-cursor .cur-dot {
+    width: 7px; height: 7px;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  /* ============================================================
+     INTERNET BROWSER (NODE/NET)
+     ============================================================ */
+  .br-app { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .br-tabs {
+    display: flex;
+    background: var(--bg-2);
+    border-bottom: 1.5px solid var(--ink);
+    padding: 6px 6px 0;
+    gap: 2px;
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+  .br-tab {
+    background: var(--bg);
+    border: 1.5px solid var(--ink);
+    border-bottom: none;
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    max-width: 200px;
+    color: var(--ink-2);
+  }
+  .br-tab.active { background: var(--panel); color: var(--ink); }
+  .br-tab .br-tab-title { overflow: hidden; text-overflow: ellipsis; }
+  .br-tab .br-tab-close {
+    font-size: 13px;
+    color: var(--ink-2);
+    cursor: pointer;
+    line-height: 1;
+  }
+  .br-tab .br-tab-close:hover { color: var(--accent); }
+  .br-newtab {
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    padding: 4px 12px;
+    font-family: var(--mono);
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: bold;
+    color: var(--ink);
+  }
+  .br-newtab:hover { background: var(--accent); }
+  .br-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    background: var(--bg-2);
+    border-bottom: 1.5px solid var(--ink);
+  }
+  .br-addr {
+    flex: 1;
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink);
+    outline: none;
+    letter-spacing: 0.5px;
+  }
+  .br-addr:focus { border-color: var(--accent); }
+  .br-content {
+    flex: 1;
+    display: flex;
+    position: relative;
+    background: var(--panel);
+    min-height: 0;
+  }
+  .br-iframe {
+    flex: 1;
+    border: none;
+    background: var(--panel);
+  }
+  .br-home {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 32px;
+    background: var(--panel);
+    overflow-y: auto;
+  }
+  .br-home .br-logo {
+    font-family: var(--mono);
+    font-size: 48px;
+    font-weight: bold;
+    letter-spacing: 8px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .br-home .br-logo .accent { color: var(--accent); }
+  .br-home .br-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--ink-2);
+    margin-bottom: 32px;
+    text-transform: uppercase;
+  }
+  .br-home form {
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    gap: 8px;
+  }
+  .br-home .br-search {
+    flex: 1;
+    border: 1.5px solid var(--ink);
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 14px;
+    background: var(--bg-2);
+    outline: none;
+    box-shadow: 4px 4px 0 var(--ink);
+    color: var(--ink);
+  }
+  .br-home .br-search:focus { background: var(--panel); border-color: var(--accent); }
+  .br-home .br-go {
+    background: var(--accent);
+    border: 1.5px solid var(--ink);
+    padding: 12px 22px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--ink);
+    font-weight: bold;
+    color: var(--ink);
+  }
+  .br-home .br-go:hover { background: var(--ink); color: var(--accent); }
+  .br-home .br-marks {
+    margin-top: 36px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    width: 100%;
+    max-width: 720px;
+  }
+  .br-mark {
+    background: var(--bg-2);
+    border: 1.5px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    padding: 14px;
+    cursor: pointer;
+    font-family: var(--mono);
+    text-align: center;
+    color: var(--ink);
+  }
+  .br-mark:hover { background: var(--accent); }
+  .br-mark .mk-icon {
+    font-size: 24px;
+    margin-bottom: 6px;
+    color: var(--accent);
+    font-weight: bold;
+  }
+  .br-mark:hover .mk-icon { color: var(--ink); }
+  .br-mark .mk-name {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  .br-mark .mk-host {
+    font-size: 9px;
+    color: var(--ink-2);
+    margin-top: 4px;
+  }
+  .br-frame-fallback {
+    position: absolute;
+    inset: 0;
+    background: var(--panel);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+    font-family: var(--mono);
+  }
+  .br-frame-fallback.show { display: flex; }
+  .br-frame-fallback h3 {
+    color: var(--accent);
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+  .br-frame-fallback p {
+    color: var(--ink-2);
+    font-size: 12px;
+    margin-bottom: 20px;
+    max-width: 460px;
+    line-height: 1.6;
+  }
+
+  /* ============================================================
+     COMMS APP — voice + chat + screen share
+     ============================================================ */
+  .cm-app { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .cm-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: var(--ink);
+    color: var(--panel);
+    border-bottom: 1.5px solid var(--ink);
+    font-family: var(--mono);
+  }
+  .cm-ch-dot {
+    width: 12px; height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent);
+    flex-shrink: 0;
+  }
+  .cm-ch-name {
+    font-size: 13px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    flex: 1;
+  }
+  .cm-ch-name:hover { color: var(--accent); }
+  .cm-counter {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--accent);
+  }
+  .cm-body { display: flex; flex: 1; min-height: 0; }
+
+  /* Members sidebar */
+  .cm-members {
+    width: 220px;
+    background: var(--bg-2);
+    border-right: 1.5px solid var(--ink);
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .cm-members .cm-mhdr {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--ink-2);
+    padding: 10px 14px 4px;
+    text-transform: uppercase;
+  }
+  .cm-member {
+    padding: 8px 12px;
+    border-bottom: 1px solid #ddd;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink);
+  }
+  .cm-member .cm-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cm-member .cm-mdot {
+    width: 10px; height: 10px;
+    border: 1.5px solid var(--ink);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .cm-member.speaking .cm-mdot {
+    box-shadow: 0 0 0 3px rgba(255,106,26,0.45);
+    animation: pulseDot 0.5s infinite;
+  }
+  .cm-member .cm-mname {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  .cm-member.muted { opacity: 0.5; }
+  .cm-member.muted .cm-mname::after {
+    content: ' [MUTED]';
+    color: var(--accent-2);
+    font-size: 9px;
+  }
+  .cm-member .cm-mmute {
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    padding: 1px 5px;
+    font-family: var(--mono);
+    font-size: 10px;
+    cursor: pointer;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .cm-member .cm-mmute.on { background: var(--accent); }
+  .cm-member .cm-mvol {
+    width: 100%;
+    margin-top: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 3px;
+    background: var(--ink);
+    outline: none;
+  }
+  .cm-member .cm-mvol::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border: 1px solid var(--ink);
+    cursor: pointer;
+  }
+  .cm-member .cm-mvol::-moz-range-thumb {
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border: 1px solid var(--ink);
+    cursor: pointer;
+  }
+
+  /* Main pane */
+  .cm-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    min-width: 0;
+  }
+  .cm-tabs {
+    display: flex;
+    background: var(--bg-2);
+    border-bottom: 1.5px solid var(--ink);
+  }
+  .cm-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-right: 1.5px solid var(--ink);
+    padding: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    color: var(--ink-2);
+    text-transform: uppercase;
+  }
+  .cm-tab:last-child { border-right: none; }
+  .cm-tab.active {
+    background: var(--panel);
+    color: var(--ink);
+    border-bottom: 3px solid var(--accent);
+    font-weight: bold;
+  }
+  .cm-tab:hover:not(.active) { background: var(--bg); color: var(--ink); }
+
+  .cm-pane { flex: 1; display: none; flex-direction: column; min-height: 0; }
+  .cm-pane.active { display: flex; }
+
+  /* Voice pane */
+  .cm-voice {
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    text-align: center;
+    gap: 16px;
+  }
+  .cm-voice .vc-status {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--ink-2);
+    text-transform: uppercase;
+  }
+  .cm-voice .vc-status .ind {
+    color: var(--accent);
+    font-weight: bold;
+  }
+  .cm-voice .vc-mic-vis {
+    width: 100px; height: 100px;
+    border: 3px solid var(--ink);
+    border-radius: 50%;
+    background: var(--bg-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    color: var(--ink);
+    position: relative;
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .cm-voice .vc-mic-vis.on { background: var(--accent); border-color: var(--ink); }
+  .cm-voice .vc-mic-vis.off { background: #E53935; color: var(--panel); }
+  .cm-voice .vc-mic-vis .vc-ring {
+    position: absolute;
+    inset: -8px;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.1s, transform 0.1s;
+  }
+  .cm-voice .vc-mic-vis.on .vc-ring { opacity: 0.6; }
+  .cm-voice .vc-meter {
+    width: 240px; height: 10px;
+    background: var(--ink);
+    border: 1.5px solid var(--ink);
+    position: relative;
+    overflow: hidden;
+  }
+  .cm-voice .vc-bar {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.05s;
+  }
+  .cm-voice .vc-join {
+    background: var(--accent);
+    border: 1.5px solid var(--ink);
+    padding: 10px 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink);
+    text-transform: uppercase;
+    font-weight: bold;
+    color: var(--ink);
+  }
+  .cm-voice .vc-join:hover { background: var(--ink); color: var(--accent); }
+  .cm-voice .vc-join.leave { background: #E53935; color: var(--panel); }
+
+  /* Chat pane */
+  .cm-chat-feed {
+    flex: 1;
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--panel);
+    min-height: 0;
+  }
+  .cm-msg {
+    display: flex;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .cm-msg .cm-mdot {
+    width: 10px; height: 10px;
+    border: 1.5px solid var(--ink);
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .cm-msg .cm-mbox { flex: 1; min-width: 0; }
+  .cm-msg .cm-mhead {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .cm-msg .cm-mhead .cm-who { font-weight: bold; color: var(--ink); }
+  .cm-msg .cm-mhead .cm-when { color: var(--ink-2); margin-left: 8px; }
+  .cm-msg .cm-mtext {
+    color: var(--ink);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  .cm-msg .cm-mtext a {
+    color: var(--accent-2);
+    text-decoration: underline;
+    cursor: pointer;
+    word-break: break-all;
+  }
+  .cm-msg .cm-mtext a:hover { background: var(--accent); color: var(--ink); text-decoration: none; }
+  .cm-msg.system { opacity: 0.7; }
+  .cm-msg.system .cm-mtext { font-style: italic; color: var(--ink-2); }
+
+  .cm-chat-empty {
+    text-align: center;
+    color: var(--ink-2);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 40px;
+    margin: auto;
+  }
+
+  .cm-chat-input {
+    display: flex;
+    gap: 6px;
+    padding: 8px;
+    border-top: 1.5px solid var(--ink);
+    background: var(--bg-2);
+  }
+  .cm-chat-input input {
+    flex: 1;
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    color: var(--ink);
+  }
+  .cm-chat-input input:focus { border-color: var(--accent); }
+  .cm-chat-input button {
+    background: var(--accent);
+    border: 1.5px solid var(--ink);
+    padding: 8px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 var(--ink);
+    color: var(--ink);
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  .cm-chat-input button:hover { background: var(--ink); color: var(--accent); }
+  .cm-chat-input button:active { transform: translate(2px,2px); box-shadow: 0 0 0 var(--ink); }
+
+  /* Screen share pane */
+  .cm-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--ink);
+    min-height: 0;
+  }
+  .cm-screen .ss-stage {
+    flex: 1;
+    background:
+      linear-gradient(45deg, #222 25%, transparent 25%) 0 0/16px 16px,
+      linear-gradient(-45deg, #222 25%, transparent 25%) 0 0/16px 16px,
+      linear-gradient(45deg, transparent 75%, #222 75%) 0 0/16px 16px,
+      linear-gradient(-45deg, transparent 75%, #222 75%) 0 0/16px 16px,
+      #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .cm-screen video {
+    max-width: 100%;
+    max-height: 100%;
+    background: #000;
+    border: 1.5px solid var(--accent);
+    box-shadow: 0 0 30px rgba(255,106,26,0.4);
+  }
+  .cm-screen .ss-idle {
+    color: var(--bg);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-align: center;
+    padding: 30px;
+  }
+  .cm-screen .ss-idle .ss-tag {
+    color: var(--accent);
+    font-size: 14px;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+  .cm-screen .ss-idle p {
+    color: rgba(255,255,255,0.5);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 6px 0;
+  }
+  .cm-screen .ss-controls {
+    background: var(--ink);
+    border-top: 1px solid #333;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+  .cm-screen .ss-btn {
+    background: var(--accent);
+    border: 1.5px solid var(--accent);
+    color: var(--ink);
+    padding: 8px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  .cm-screen .ss-btn:hover { background: var(--panel); }
+  .cm-screen .ss-btn.stop { background: #E53935; border-color: #E53935; color: var(--panel); }
+  .cm-screen .ss-btn.stop:hover { background: var(--panel); color: var(--ink); }
+  .cm-screen .ss-live {
+    position: absolute;
+    top: 12px; left: 12px;
+    background: var(--accent);
+    color: var(--ink);
+    padding: 4px 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    font-weight: bold;
+    animation: pulseDot 1.2s infinite;
+  }
+
+  /* Bottom toolbar */
+  .cm-toolbar {
+    display: flex;
+    gap: 4px;
+    background: var(--ink);
+    padding: 6px;
+    border-top: 1.5px solid var(--ink);
+  }
+  .cm-tbtn {
+    flex: 1;
+    background: #2a2a2a;
+    border: 1.5px solid #444;
+    color: var(--panel);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 8px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .cm-tbtn:hover { background: #3a3a3a; }
+  .cm-tbtn.on { background: var(--accent); color: var(--ink); border-color: var(--accent); }
+  .cm-tbtn.off { background: #E53935; color: var(--panel); border-color: #E53935; }
+
+  /* ============================================================
+     WELCOME SCREEN — Museum Quiet intro
+     ============================================================ */
+  #welcome {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 999998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--sans);
+    transition: opacity 0.7s ease, visibility 0.7s ease;
+  }
+  #welcome.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .wc-content {
+    width: 100%;
+    max-width: 420px;
+    padding: 40px 32px;
+    text-align: center;
+  }
+  @keyframes wcFadeIn {
+    from { transform: translateY(8px); opacity: 0; }
+    to   { transform: translateY(0);  opacity: 1; }
+  }
+  .wc-tag {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 4px;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    animation: wcFadeIn 0.6s ease-out 0.0s both;
+  }
+  .wc-title {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 72px;
+    line-height: 1;
+    color: var(--ink);
+    margin: 0;
+    letter-spacing: 0.5px;
+    animation: wcFadeIn 0.9s ease-out 0.2s both;
+  }
+  .wc-title em { font-style: italic; }
+  .wc-divider {
+    width: 36px;
+    height: 1px;
+    background: var(--accent-2);
+    margin: 28px auto 32px;
+    animation: wcFadeIn 0.6s ease-out 0.6s both;
+  }
+  #wc-form {
+    animation: wcFadeIn 0.6s ease-out 0.8s both;
+  }
+  .wc-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    padding: 10px 4px;
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 19px;
+    color: var(--ink);
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .wc-input::placeholder { color: var(--ink-2); opacity: 0.55; font-style: italic; }
+  .wc-input:focus { border-bottom-color: var(--accent); }
+
+  .wc-row {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .wc-mini-label {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    color: var(--ink-2);
+    text-transform: uppercase;
+  }
+  .wc-colors {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+  }
+  .wc-color {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.15s, border-color 0.15s;
+    background-clip: padding-box;
+  }
+  .wc-color:hover { transform: scale(1.12); }
+  .wc-color.sel {
+    border-color: var(--ink);
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--ink);
+  }
+  .wc-enter {
+    margin-top: 30px;
+    width: 100%;
+    background: var(--bg-2);
+    border: 1px solid var(--accent);
+    color: var(--ink);
+    padding: 12px 28px;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 17px;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: background 0.25s, color 0.25s;
+  }
+  .wc-enter:hover { background: var(--accent); color: var(--bg); }
+  .wc-lang-row {
+    margin-top: 40px;
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    animation: wcFadeIn 0.6s ease-out 1.0s both;
+  }
+  .wc-select {
+    background: transparent;
+    border: 1px solid var(--line);
+    padding: 6px 14px;
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--ink);
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+    border-radius: 0;
+  }
+  .wc-select:focus { border-color: var(--accent); }
+
+  /* ============================================================
+     REMOTE CURSORS — labelled chips for other users via Firebase
+     ============================================================ */
+  .remote-cursor {
+    position: fixed;
+    left: 0; top: 0;
+    pointer-events: none;
+    z-index: 999997;
+    transition: transform 0.08s linear;
+    will-change: transform;
+    display: flex;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .remote-cursor .rc-arrow {
+    width: 0;
+    height: 0;
+    border-left: 8px solid;
+    border-top: 4px solid transparent;
+    border-bottom: 8px solid transparent;
+    transform: translateY(2px);
+  }
+  .remote-cursor .rc-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 7px;
+    margin-left: -2px;
+    background: var(--ink);
+    color: var(--bg-2);
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    box-shadow: 2px 2px 0 rgba(42,36,27,0.25);
+  }
+  .remote-cursor .rc-dot {
+    width: 7px; height: 7px;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- =================== WELCOME / INTRO =================== -->
+<div id="welcome">
+  <div class="wc-content">
+    <div class="wc-tag">A QUIET PLACE</div>
+    <h1 class="wc-title"><em>Node</em></h1>
+    <div class="wc-divider"></div>
+
+    <form id="wc-form" autocomplete="off">
+      <input type="text" class="wc-input" id="wc-name" placeholder="your name" maxlength="24" />
+
+      <div class="wc-row">
+        <span class="wc-mini-label">AVATAR COLOUR</span>
+        <div class="wc-colors" id="wc-colors"></div>
+      </div>
+
+      <button type="submit" class="wc-enter">Enter the gallery</button>
+    </form>
+
+    <div class="wc-lang-row">
+      <span class="wc-mini-label">LANGUAGE</span>
+      <select id="wc-lang" class="wc-select">
+        <option value="en">English</option>
+        <option value="fr">Français</option>
+        <option value="es">Español</option>
+        <option value="de">Deutsch</option>
+        <option value="it">Italiano</option>
+        <option value="ja">日本語</option>
+        <option value="zh">中文</option>
+        <option value="ar">العربية</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- =================== DESKTOP =================== -->
+<div id="desktop">
+  <div class="icon-grid">
+    <div class="icon" data-app="files" ondblclick="openApp('files')" onclick="selectIcon(this)" style="--bob-delay:0s">
+      <div class="glyph">📁</div>
+      <div class="label">FILES</div>
+    </div>
+    <div class="icon" data-app="notes" ondblclick="openApp('notes')" onclick="selectIcon(this)" style="--bob-delay:0.4s">
+      <div class="glyph">📝</div>
+      <div class="label">NOTES</div>
+    </div>
+    <div class="icon" data-app="paint" ondblclick="openApp('paint')" onclick="selectIcon(this)" style="--bob-delay:0.8s">
+      <div class="glyph">🎨</div>
+      <div class="label">PAINT</div>
+    </div>
+    <div class="icon" data-app="browser" ondblclick="openApp('browser')" onclick="selectIcon(this)" style="--bob-delay:1.2s">
+      <div class="glyph">🌐</div>
+      <div class="label">INTERNET</div>
+    </div>
+    <div class="icon" data-app="comms" ondblclick="openApp('comms')" onclick="selectIcon(this)" style="--bob-delay:1.6s">
+      <div class="glyph">💬</div>
+      <div class="label">COMMS</div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== START MENU =================== -->
+<div id="start-menu">
+  <div class="header">NODE // MENU</div>
+  <div class="item" onclick="openApp('files'); toggleStart()">
+    <span class="ic">▦</span> FILES
+  </div>
+  <div class="item" onclick="openApp('notes'); toggleStart()">
+    <span class="ic">≡</span> NOTES
+  </div>
+  <div class="item" onclick="openApp('paint'); toggleStart()">
+    <span class="ic">✎</span> PAINT
+  </div>
+  <div class="item" onclick="openApp('browser'); toggleStart()">
+    <span class="ic">◐</span> INTERNET
+  </div>
+  <div class="item" onclick="openApp('comms'); toggleStart()">
+    <span class="ic">◈</span> COMMS
+  </div>
+  <div class="item" onclick="document.documentElement.requestFullscreen(); toggleStart()">
+    <span class="ic">⛶</span> FULLSCREEN
+  </div>
+  <div class="item" onclick="toggleStart(); promptCreateInstance()">
+    <span class="ic">+</span> NEW INSTANCE
+  </div>
+  <div class="item" onclick="toggleStart(); showWelcome()">
+    <span class="ic">⇲</span> SIGN OUT
+  </div>
+  <div class="item" onclick="nodeAlert('NODE OS', 'v0.2 — built for you and your friends.\\n\\nNew in v0.2:\\n• Multi-instance profiles\\n• Cursor labels\\n• Spectate other instances\\n\\nSee ROADMAP.md for what is next.'); toggleStart()">
+    <span class="ic">i</span> ABOUT
+  </div>
+</div>
+
+<!-- =================== TASKBAR =================== -->
+<div id="taskbar">
+  <button id="start-btn" onclick="toggleStart()">START</button>
+  <button id="user-chip" onclick="toggleInstances(event)" title="Switch instance">
+    <span class="ch-dot"></span>
+    <span class="ch-name">NODE</span>
+    <span class="ch-arrow">▲</span>
+  </button>
+  <div id="task-list"></div>
+  <div id="tray">
+    <span class="dot"></span>
+    <span id="user-label">NODE</span>
+    <span id="clock">--:--:--</span>
+  </div>
+</div>
+
+<!-- =================== INSTANCES POPUP =================== -->
+<div id="instances-popup">
+  <div class="ip-header">
+    <span class="ip-title">INSTANCES</span>
+    <button class="ip-new" onclick="promptCreateInstance()">+ NEW</button>
+  </div>
+  <div class="ip-list" id="instances-list"></div>
+  <div class="ip-footer">
+    <span class="dim">Click to spectate</span>
+    <span class="dim">v0.2</span>
+  </div>
+</div>
+
+<!-- =================== SPECTATOR BANNER =================== -->
+<div id="spec-banner">
+  <span class="sb-dot"></span>
+  <span>SPECTATING <strong id="sb-name"></strong>'S DESKTOP</span>
+  <button onclick="returnToHome()">↩ RETURN TO MINE</button>
+</div>
+
+<!-- =================== CUSTOM CURSOR LABEL =================== -->
+<div id="me-cursor">
+  <span class="cur-dot"></span>
+  <span class="cur-name">NODE</span>
+</div>
+
+<script>
+/* ============================================================
+   FIREBASE — real-time sync backend (chat first; more layers later)
+   Project: translate-f6414
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyBYqhb_aENCZf4NvTObsytxrU6FSwDh7X4",
+  authDomain: "translate-f6414.firebaseapp.com",
+  databaseURL: "https://translate-f6414-default-rtdb.firebaseio.com",
+  projectId: "translate-f6414",
+  storageBucket: "translate-f6414.firebasestorage.app",
+  messagingSenderId: "831851071617",
+  appId: "1:831851071617:web:7f564fda611068169c6580"
+};
+let fbApp = null, fbAuth = null, fbDb = null, fbUser = null;
+try {
+  fbApp = firebase.initializeApp(firebaseConfig);
+  fbAuth = firebase.auth();
+  fbDb = firebase.database();
+  fbAuth.signInAnonymously().catch(err => console.warn('[NODE] Anonymous auth failed:', err));
+  fbAuth.onAuthStateChanged((user) => {
+    fbUser = user;
+    if (user && window.NodeComms && typeof NodeComms.attachFirebase === 'function') {
+      NodeComms.attachFirebase(fbDb, user);
+    }
+    if (user && window.NodePresence && typeof NodePresence.init === 'function') {
+      NodePresence.init();
+    }
+    if (user && window.NodeFS && typeof NodeFS.attachCloud === 'function') {
+      NodeFS.attachCloud(fbDb, user);
+    }
+    console.log('[NODE] Firebase auth:', user ? user.uid : 'signed out');
+  });
+} catch (e) {
+  console.warn('[NODE] Firebase init failed — running in local-only mode:', e);
+}
+
+/* ============================================================
+   WINDOW MANAGER
+   ============================================================ */
+let zCounter = 100;
+const openWindows = {};   // id -> { el, taskEl, app }
+
+function createWindow({ id, title, content, width=720, height=480, x=null, y=null }) {
+  if (openWindows[id]) { focusWindow(id); return openWindows[id]; }
+
+  const win = document.createElement('div');
+  win.className = 'window focused';
+  win.style.width = width + 'px';
+  win.style.height = height + 'px';
+  win.style.left = (x ?? (window.innerWidth - width) / 2) + 'px';
+  win.style.top  = (y ?? (window.innerHeight - height - 36) / 2 - 20) + 'px';
+  win.style.zIndex = ++zCounter;
+  win.dataset.id = id;
+
+  win.innerHTML = `
+    <div class="titlebar">
+      <div class="accent-bar"></div>
+      <div class="title">${title}</div>
+      <div class="win-buttons">
+        <button class="win-btn min" title="Minimize">_</button>
+        <button class="win-btn max" title="Maximize">▢</button>
+        <button class="win-btn close" title="Close">✕</button>
+      </div>
+    </div>
+    <div class="window-body"></div>
+  `;
+  win.querySelector('.window-body').appendChild(content);
+  document.body.insertBefore(win, document.getElementById('taskbar'));
+
+  // Drag
+  const titlebar = win.querySelector('.titlebar');
+  let dragging = false, ox = 0, oy = 0;
+  titlebar.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.win-btn')) return;
+    dragging = true;
+    const r = win.getBoundingClientRect();
+    ox = e.clientX - r.left; oy = e.clientY - r.top;
+    focusWindow(id);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    let nx = e.clientX - ox;
+    let ny = e.clientY - oy;
+    nx = Math.max(-width + 60, Math.min(window.innerWidth - 60, nx));
+    ny = Math.max(0, Math.min(window.innerHeight - 60, ny));
+    win.style.left = nx + 'px';
+    win.style.top  = ny + 'px';
+  });
+  document.addEventListener('mouseup', () => dragging = false);
+
+  win.addEventListener('mousedown', () => focusWindow(id));
+
+  // Buttons
+  win.querySelector('.win-btn.close').onclick = () => closeWindow(id);
+  win.querySelector('.win-btn.min').onclick = () => {
+    win.style.display = 'none';
+    const t = openWindows[id]?.taskEl;
+    if (t) t.classList.remove('active');
+  };
+  win.querySelector('.win-btn.max').onclick = () => {
+    if (win.dataset.max === '1') {
+      win.style.left = win.dataset.px;
+      win.style.top  = win.dataset.py;
+      win.style.width = win.dataset.pw;
+      win.style.height = win.dataset.ph;
+      win.dataset.max = '0';
+    } else {
+      win.dataset.px = win.style.left;
+      win.dataset.py = win.style.top;
+      win.dataset.pw = win.style.width;
+      win.dataset.ph = win.style.height;
+      win.style.left = '0px';
+      win.style.top = '0px';
+      win.style.width = window.innerWidth + 'px';
+      win.style.height = (window.innerHeight - 36) + 'px';
+      win.dataset.max = '1';
+    }
+  };
+
+  // Taskbar entry
+  const taskEl = document.createElement('div');
+  taskEl.className = 'task-item active';
+  taskEl.textContent = title;
+  taskEl.onclick = () => {
+    if (win.style.display === 'none') {
+      win.style.display = 'flex';
+      focusWindow(id);
+    } else if (parseInt(win.style.zIndex) === zCounter && win.style.display !== 'none') {
+      win.style.display = 'none';
+      taskEl.classList.remove('active');
+    } else {
+      focusWindow(id);
+    }
+  };
+  document.getElementById('task-list').appendChild(taskEl);
+
+  openWindows[id] = { el: win, taskEl };
+  focusWindow(id);
+  if (window.NodeProfiles && NodeProfiles.activeId) NodeProfiles.recordOpenApps();
+  return openWindows[id];
+}
+
+function focusWindow(id) {
+  const w = openWindows[id];
+  if (!w) return;
+  w.el.style.display = 'flex';
+  w.el.style.zIndex = ++zCounter;
+  Object.values(openWindows).forEach(ow => {
+    ow.el.classList.remove('focused');
+    ow.taskEl.classList.remove('active');
+  });
+  w.el.classList.add('focused');
+  w.taskEl.classList.add('active');
+}
+
+function closeWindow(id) {
+  const w = openWindows[id];
+  if (!w) return;
+  w.el.remove();
+  w.taskEl.remove();
+  delete openWindows[id];
+  if (window.NodeProfiles && NodeProfiles.activeId) NodeProfiles.recordOpenApps();
+}
+
+/* ============================================================
+   APP LAUNCHER
+   ============================================================ */
+function openApp(name, opts = {}) {
+  if (name === 'paint') {
+    createWindow({
+      id: 'paint',
+      title: 'Paint.node',
+      content: buildPaintApp(),
+      width: 880,
+      height: 560,
+    });
+  } else if (name === 'files') {
+    const path = opts.path || '/';
+    createWindow({
+      id: 'files',
+      title: 'Files.node',
+      content: buildFilesApp(path),
+      width: 780,
+      height: 520,
+    });
+  } else if (name === 'notes') {
+    // Each Notes window is unique per file path
+    const id = 'notes:' + (opts.path || 'new-' + Date.now());
+    createWindow({
+      id,
+      title: 'Notes.node — ' + (opts.path ? NodeFS.basename(opts.path) : 'Untitled'),
+      content: buildNotesApp(opts.path || null),
+      width: 640,
+      height: 460,
+    });
+  } else if (name === 'viewer') {
+    const id = 'viewer:' + opts.path;
+    createWindow({
+      id,
+      title: 'Viewer.node — ' + NodeFS.basename(opts.path),
+      content: buildImageViewer(opts.path),
+      width: 720,
+      height: 540,
+    });
+  } else if (name === 'browser') {
+    // Re-use existing browser window if open; navigate to URL if provided.
+    if (openWindows['browser']) {
+      focusWindow('browser');
+      if (opts.url && window.NodeBrowser) NodeBrowser.openInActive(opts.url);
+      return;
+    }
+    createWindow({
+      id: 'browser',
+      title: 'Internet.node',
+      content: buildBrowserApp(opts.url || null),
+      width: 920,
+      height: 600,
+    });
+  } else if (name === 'comms') {
+    if (openWindows['comms']) { focusWindow('comms'); return; }
+    createWindow({
+      id: 'comms',
+      title: 'Comms.node',
+      content: buildCommsApp(),
+      width: 800,
+      height: 560,
+    });
+  }
+}
+
+function selectIcon(el) {
+  document.querySelectorAll('.icon').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.icon')) {
+    document.querySelectorAll('.icon').forEach(i => i.classList.remove('active'));
+  }
+  if (!e.target.closest('#start-menu') && !e.target.closest('#start-btn')) {
+    document.getElementById('start-menu').classList.remove('open');
+  }
+});
+
+function toggleStart() {
+  document.getElementById('start-menu').classList.toggle('open');
+  document.getElementById('instances-popup').classList.remove('open');
+  document.getElementById('user-chip').classList.remove('open');
+}
+
+/* ============================================================
+   PAINT APP
+   ============================================================ */
+function buildPaintApp() {
+  const root = document.createElement('div');
+  root.style.display = 'flex';
+  root.style.flexDirection = 'column';
+  root.style.flex = '1';
+  root.style.minHeight = '0';
+
+  root.innerHTML = `
+    <div class="paint-app">
+      <div class="paint-toolbar">
+        <div class="tool-group">
+          <div class="label">Tools</div>
+          <div class="tool-row">
+            <button class="tool-btn active" data-tool="brush">Brush</button>
+            <button class="tool-btn" data-tool="eraser">Eraser</button>
+          </div>
+        </div>
+
+        <div class="tool-group">
+          <div class="label">Color</div>
+          <div class="color-row">
+            <div class="color-swatch" style="background:#0A0A0A">
+              <input type="color" id="paint-color" value="#0A0A0A">
+            </div>
+            <div class="color-hex" id="paint-hex">#0A0A0A</div>
+          </div>
+          <div class="swatches" id="paint-swatches"></div>
+        </div>
+
+        <div class="tool-group">
+          <div class="label">Brush Size</div>
+          <div class="size-row">
+            <input type="range" id="paint-size" min="1" max="80" value="6">
+            <div class="size-val"><span id="paint-size-val">6</span> PX</div>
+          </div>
+        </div>
+
+        <div class="tool-group">
+          <div class="label">Canvas</div>
+          <button class="tool-btn danger" id="paint-clear">Clear</button>
+          <button class="tool-btn primary" id="paint-save">Save PNG</button>
+        </div>
+
+        <div class="tool-group" style="margin-top:auto;">
+          <div class="label" style="border:none; font-size:9px; opacity:0.6;">Paint.node v0.1</div>
+        </div>
+      </div>
+
+      <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+        <div class="paint-canvas-wrap">
+          <canvas id="paint-canvas" width="640" height="420"></canvas>
+        </div>
+        <div class="paint-status">
+          <span>● READY</span>
+          <span class="dim" id="paint-coords">x: 0  y: 0</span>
+          <span>BRUSH</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Defer wiring until in DOM
+  setTimeout(() => wirePaint(root), 0);
+  return root;
+}
+
+function wirePaint(root) {
+  const canvas = root.querySelector('#paint-canvas');
+  const ctx = canvas.getContext('2d');
+  const status = root.querySelector('.paint-status');
+  const colorInput = root.querySelector('#paint-color');
+  const colorSwatch = root.querySelector('.color-swatch');
+  const colorHex = root.querySelector('#paint-hex');
+  const sizeInput = root.querySelector('#paint-size');
+  const sizeVal = root.querySelector('#paint-size-val');
+  const coords = root.querySelector('#paint-coords');
+  const clearBtn = root.querySelector('#paint-clear');
+  const saveBtn = root.querySelector('#paint-save');
+  const toolBtns = root.querySelectorAll('.tool-btn[data-tool]');
+  const swatchesWrap = root.querySelector('#paint-swatches');
+
+  // Fill canvas white
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  let tool = 'brush';
+  let color = '#0A0A0A';
+  let size = 6;
+  let drawing = false;
+  let last = null;
+
+  // Preset swatches
+  const presets = ['#0A0A0A','#FFFFFF','#FF6A1A','#E53935','#FBC02D','#43A047','#1E88E5','#8E24AA','#00ACC1','#5D4037','#FF80AB','#90A4AE'];
+  presets.forEach(c => {
+    const s = document.createElement('div');
+    s.className = 'swatch';
+    s.style.background = c;
+    s.onclick = () => { setColor(c); };
+    swatchesWrap.appendChild(s);
+  });
+
+  function setColor(c) {
+    color = c;
+    colorInput.value = c;
+    colorSwatch.style.background = c;
+    colorHex.textContent = c.toUpperCase();
+  }
+
+  colorInput.addEventListener('input', (e) => setColor(e.target.value));
+
+  sizeInput.addEventListener('input', (e) => {
+    size = parseInt(e.target.value, 10);
+    sizeVal.textContent = size;
+  });
+
+  toolBtns.forEach(b => b.addEventListener('click', () => {
+    toolBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    tool = b.dataset.tool;
+    canvas.classList.toggle('eraser', tool === 'eraser');
+    status.querySelector('span:last-child').textContent = tool.toUpperCase();
+  }));
+
+  clearBtn.addEventListener('click', async () => {
+    const ok = await nodeConfirm('Paint.node', 'Clear the canvas?');
+    if (!ok) return;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    const def = 'paint-' + Date.now() + '.png';
+    const name = await nodePrompt('Save PNG', 'Save to /Pictures and download:', def, '');
+    if (!name) return;
+    const finalName = name.toLowerCase().endsWith('.png') ? name : name + '.png';
+    const dataUrl = canvas.toDataURL('image/png');
+    // Save to NODE FS
+    NodeFS.writeFile('/Pictures', finalName, dataUrl, 'image/png');
+    // Also download to user's machine
+    const link = document.createElement('a');
+    link.download = finalName;
+    link.href = dataUrl;
+    link.click();
+    refreshOpenFilesWindows();
+    // Status flash
+    const statusReady = status.querySelector('span');
+    const prev = statusReady.textContent;
+    statusReady.textContent = '● SAVED → /Pictures/' + finalName;
+    setTimeout(() => { statusReady.textContent = prev; }, 2500);
+  });
+
+  function pos(e) {
+    const r = canvas.getBoundingClientRect();
+    const sx = canvas.width / r.width;
+    const sy = canvas.height / r.height;
+    return {
+      x: (e.clientX - r.left) * sx,
+      y: (e.clientY - r.top) * sy
+    };
+  }
+
+  function start(e) {
+    drawing = true;
+    last = pos(e);
+    drawDot(last);
+  }
+  function move(e) {
+    const p = pos(e);
+    coords.textContent = `x: ${p.x.toFixed(0).padStart(3)}  y: ${p.y.toFixed(0).padStart(3)}`;
+    if (!drawing) return;
+    drawLine(last, p);
+    last = p;
+  }
+  function end() { drawing = false; last = null; }
+
+  function applyStroke() {
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = size;
+    if (tool === 'eraser') {
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#ffffff';
+    } else {
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+    }
+  }
+  function drawDot(p) {
+    applyStroke();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  function drawLine(a, b) {
+    applyStroke();
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+
+  // Touch support
+  canvas.addEventListener('touchstart', (e) => { e.preventDefault(); start(e.touches[0]); }, { passive: false });
+  canvas.addEventListener('touchmove',  (e) => { e.preventDefault(); move(e.touches[0]); },  { passive: false });
+  canvas.addEventListener('touchend',   (e) => { e.preventDefault(); end(); },               { passive: false });
+}
+
+/* ============================================================
+   NODE VIRTUAL FILESYSTEM (NodeFS)
+   Persisted in localStorage, namespaced per profile.
+   Tree of {name,type,children|content,...}.
+   ============================================================ */
+const NodeFS = {
+  BASE_KEY: 'node-fs-v1',
+  root: null,
+  cloudRef: null,
+  _cloudSaveTimer: null,
+  _initialCloudLoad: false,
+
+  currentKey() {
+    const pid = (window.NodeProfiles && NodeProfiles.activeId) ? NodeProfiles.activeId : 'default';
+    return this.BASE_KEY + ':' + pid;
+  },
+
+  init() {
+    const saved = localStorage.getItem(this.currentKey());
+    if (saved) {
+      try { this.root = JSON.parse(saved); return; } catch (e) { /* fall through */ }
+    }
+    const now = Date.now();
+    this.root = {
+      name: '/', type: 'folder', created: now, modified: now,
+      children: {
+        'Desktop':   { name: 'Desktop',   type: 'folder', created: now, modified: now, children: {} },
+        'Documents': { name: 'Documents', type: 'folder', created: now, modified: now, children: {
+          'welcome.txt': {
+            name: 'welcome.txt', type: 'file', mime: 'text/plain',
+            content:
+`WELCOME TO NODE OS.
+
+This is your virtual filesystem.
+Everything saves locally in your browser.
+
+Try this:
+  - Right-click in the file grid to create a folder or note
+  - Double-click 'welcome.txt' to open it in Notes
+  - Open Paint and save a PNG — it lands in /Pictures
+  - Drag windows around. Use the orange Start button.
+
+This is Phase 1.
+See ROADMAP.md for what's next.
+
+— NODE`,
+            created: now, modified: now
+          }
+        }},
+        'Pictures':  { name: 'Pictures',  type: 'folder', created: now, modified: now, children: {} },
+        'Trash':     { name: 'Trash',     type: 'folder', created: now, modified: now, children: {} }
+      }
+    };
+    this.save();
+  },
+
+  save() {
+    this.saveLocal();
+    this.saveCloud();
+  },
+
+  saveLocal() {
+    localStorage.setItem(this.currentKey(), JSON.stringify(this.root));
+  },
+
+  saveCloud() {
+    // Debounced cloud push. Only the home profile syncs to cloud.
+    if (!this.cloudRef) return;
+    if (!window.NodeProfiles || NodeProfiles.activeId !== NodeProfiles.homeId) return;
+    clearTimeout(this._cloudSaveTimer);
+    this._cloudSaveTimer = setTimeout(() => {
+      this.cloudRef.set(this.root)
+        .catch(e => console.warn('[NODE] Cloud FS save failed:', e));
+    }, 1200);
+  },
+
+  attachCloud(db, user) {
+    this.cloudRef = db.ref('users/' + user.uid + '/fs');
+    this._initialCloudLoad = false;
+    this.cloudRef.on('value', (snap) => {
+      const cloud = snap.val();
+      if (!this._initialCloudLoad) {
+        this._initialCloudLoad = true;
+        if (cloud) {
+          // Cloud is authoritative for home profile
+          if (NodeProfiles.activeId === NodeProfiles.homeId) {
+            this.root = cloud;
+            this.saveLocal();
+            refreshOpenFilesWindows();
+          } else {
+            // Still update the home profile's local cache
+            localStorage.setItem(this.BASE_KEY + ':' + NodeProfiles.homeId, JSON.stringify(cloud));
+          }
+          console.log('[NODE] Filesystem restored from cloud');
+        } else {
+          // First time on this account — push current local FS up as the seed
+          this.cloudRef.set(this.root).catch(() => {});
+          console.log('[NODE] Initial filesystem pushed to cloud');
+        }
+        return;
+      }
+      // Subsequent changes from other devices
+      if (NodeProfiles.activeId !== NodeProfiles.homeId) return;
+      if (!cloud) return;
+      if (JSON.stringify(cloud) === JSON.stringify(this.root)) return;
+      this.root = cloud;
+      this.saveLocal();
+      refreshOpenFilesWindows();
+    });
+  },
+
+  normalize(path) {
+    if (!path || path === '/') return '/';
+    return '/' + path.split('/').filter(Boolean).join('/');
+  },
+  parent(path) {
+    const parts = this.normalize(path).split('/').filter(Boolean);
+    parts.pop();
+    return '/' + parts.join('/');
+  },
+  basename(path) {
+    return this.normalize(path).split('/').filter(Boolean).pop() || '/';
+  },
+  join(a, b) {
+    return this.normalize((a === '/' ? '' : a) + '/' + b);
+  },
+
+  resolve(path) {
+    path = this.normalize(path);
+    if (path === '/') return this.root;
+    const parts = path.split('/').filter(Boolean);
+    let node = this.root;
+    for (const p of parts) {
+      if (!node.children || !node.children[p]) return null;
+      node = node.children[p];
+    }
+    return node;
+  },
+
+  exists(path) { return this.resolve(path) !== null; },
+
+  list(path) {
+    const node = this.resolve(path);
+    if (!node || node.type !== 'folder') return [];
+    return Object.values(node.children).sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+  },
+
+  mkdir(parentPath, name) {
+    const parent = this.resolve(parentPath);
+    if (!parent || parent.type !== 'folder') return false;
+    if (parent.children[name]) return false;
+    const now = Date.now();
+    parent.children[name] = { name, type: 'folder', created: now, modified: now, children: {} };
+    parent.modified = now;
+    this.save();
+    return true;
+  },
+
+  writeFile(parentPath, name, content, mime = 'text/plain') {
+    const parent = this.resolve(parentPath);
+    if (!parent || parent.type !== 'folder') return false;
+    const now = Date.now();
+    const existing = parent.children[name];
+    parent.children[name] = {
+      name, type: 'file', mime, content,
+      created: existing?.created || now,
+      modified: now
+    };
+    parent.modified = now;
+    this.save();
+    return true;
+  },
+
+  remove(path) {
+    path = this.normalize(path);
+    if (path === '/') return false;
+    const parent = this.resolve(this.parent(path));
+    const name = this.basename(path);
+    if (!parent || !parent.children[name]) return false;
+    delete parent.children[name];
+    parent.modified = Date.now();
+    this.save();
+    return true;
+  },
+
+  rename(path, newName) {
+    if (!newName || newName.includes('/')) return false;
+    const parent = this.resolve(this.parent(path));
+    const oldName = this.basename(path);
+    if (!parent || !parent.children[oldName]) return false;
+    if (parent.children[newName] && newName !== oldName) return false;
+    const node = parent.children[oldName];
+    node.name = newName;
+    node.modified = Date.now();
+    parent.children[newName] = node;
+    if (newName !== oldName) delete parent.children[oldName];
+    parent.modified = Date.now();
+    this.save();
+    return true;
+  },
+
+  ext(name) {
+    const i = name.lastIndexOf('.');
+    return i === -1 ? '' : name.slice(i + 1).toLowerCase();
+  },
+
+  isImage(name) {
+    return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(this.ext(name));
+  },
+
+  iconFor(item) {
+    if (!item) return '📎';
+    if (item.type === 'folder') {
+      // Some special folders get distinct icons
+      if (item.name === 'Pictures') return '🖼';
+      if (item.name === 'Documents') return '📂';
+      if (item.name === 'Music')     return '🎵';
+      if (item.name === 'Trash')     return '🗑';
+      if (item.name === 'Desktop')   return '🪟';
+      return '📁';
+    }
+    const ext = this.ext(item.name);
+    const map = {
+      txt: '📄', md: '📝', json: '📋', log: '📃',
+      png: '🖼', jpg: '🖼', jpeg: '🖼', gif: '🖼', webp: '🖼', svg: '🖼', bmp: '🖼',
+      pdf: '📕',
+      mp3: '🎵', wav: '🎵', ogg: '🎵', flac: '🎵', m4a: '🎵',
+      mp4: '🎬', mov: '🎬', avi: '🎬', webm: '🎬', mkv: '🎬',
+      zip: '🗜', rar: '🗜', tar: '🗜', gz: '🗜', '7z': '🗜',
+      html: '🌐', css: '🎨', js: '⚙', ts: '⚙', py: '🐍', rs: '🦀', go: '🐹',
+      exe: '⚙', dmg: '⚙', app: '⚙',
+      ttf: '🔤', otf: '🔤', woff: '🔤', woff2: '🔤',
+      doc: '📄', docx: '📄', odt: '📄',
+      xls: '📊', xlsx: '📊', csv: '📊',
+      ppt: '📽', pptx: '📽'
+    };
+    return map[ext] || '📎';
+  }
+};
+
+/* ============================================================
+   MODAL HELPERS (NODE-styled replacements for alert/prompt/confirm)
+   ============================================================ */
+function buildModal({ title, body, input, actions }) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+
+  const m = document.createElement('div');
+  m.className = 'modal';
+
+  const t = document.createElement('div');
+  t.className = 'modal-title';
+  t.textContent = title;
+  m.appendChild(t);
+
+  const b = document.createElement('div');
+  b.className = 'modal-body';
+  if (body !== undefined) b.textContent = body;
+  let inputEl = null;
+  if (input) {
+    inputEl = document.createElement('input');
+    inputEl.type = 'text';
+    inputEl.value = input.value || '';
+    inputEl.placeholder = input.placeholder || '';
+    b.appendChild(inputEl);
+  }
+  m.appendChild(b);
+
+  const a = document.createElement('div');
+  a.className = 'modal-actions';
+  actions.forEach(({ label, kind, value }) => {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    if (kind) btn.classList.add(kind);
+    btn.onclick = () => {
+      const result = (value === 'input') ? (inputEl ? inputEl.value : null) : value;
+      overlay.remove();
+      if (m._resolve) m._resolve(result);
+    };
+    a.appendChild(btn);
+  });
+  m.appendChild(a);
+
+  overlay.appendChild(m);
+  document.body.appendChild(overlay);
+
+  if (inputEl) {
+    setTimeout(() => { inputEl.focus(); inputEl.select(); }, 30);
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const primary = a.querySelector('button.primary') || a.querySelector('button');
+        primary.click();
+      } else if (e.key === 'Escape') {
+        overlay.remove();
+        if (m._resolve) m._resolve(null);
+      }
+    });
+  }
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.remove();
+      if (m._resolve) m._resolve(null);
+    }
+  });
+
+  return new Promise((resolve) => { m._resolve = resolve; });
+}
+
+function nodeAlert(title, body) {
+  return buildModal({
+    title, body,
+    actions: [{ label: 'OK', kind: 'primary', value: true }]
+  });
+}
+function nodeConfirm(title, body) {
+  return buildModal({
+    title, body,
+    actions: [
+      { label: 'Cancel', value: false },
+      { label: 'OK', kind: 'primary', value: true }
+    ]
+  });
+}
+function nodePrompt(title, body, defaultValue = '', placeholder = '') {
+  return buildModal({
+    title, body,
+    input: { value: defaultValue, placeholder },
+    actions: [
+      { label: 'Cancel', value: null },
+      { label: 'OK', kind: 'primary', value: 'input' }
+    ]
+  });
+}
+
+/* ============================================================
+   CONTEXT MENU HELPER
+   ============================================================ */
+function showContextMenu(x, y, items) {
+  document.querySelectorAll('.ctx-menu').forEach(m => m.remove());
+  const menu = document.createElement('div');
+  menu.className = 'ctx-menu';
+  items.forEach(it => {
+    if (it.sep) {
+      const s = document.createElement('div');
+      s.className = 'sep';
+      menu.appendChild(s);
+      return;
+    }
+    const el = document.createElement('div');
+    el.className = 'citem' + (it.disabled ? ' disabled' : '');
+    el.textContent = it.label;
+    el.onclick = () => {
+      menu.remove();
+      if (!it.disabled && it.action) it.action();
+    };
+    menu.appendChild(el);
+  });
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  document.body.appendChild(menu);
+  // Reposition if overflowing
+  requestAnimationFrame(() => {
+    const r = menu.getBoundingClientRect();
+    if (r.right > window.innerWidth) menu.style.left = (window.innerWidth - r.width - 4) + 'px';
+    if (r.bottom > window.innerHeight - 36) menu.style.top = (window.innerHeight - 36 - r.height - 4) + 'px';
+  });
+  const close = (e) => {
+    if (!menu.contains(e.target)) {
+      menu.remove();
+      document.removeEventListener('mousedown', close, true);
+    }
+  };
+  setTimeout(() => document.addEventListener('mousedown', close, true), 0);
+}
+
+/* ============================================================
+   FILE EXPLORER APP
+   ============================================================ */
+function buildFilesApp(initialPath = '/') {
+  const root = document.createElement('div');
+  root.style.display = 'flex';
+  root.style.flexDirection = 'column';
+  root.style.flex = '1';
+  root.style.minHeight = '0';
+
+  let cwd = NodeFS.normalize(initialPath);
+  const history = [cwd];
+  let histIdx = 0;
+
+  root.innerHTML = `
+    <div class="fx-app">
+      <div class="fx-toolbar">
+        <button class="fx-tbtn" data-act="back" title="Back">◂</button>
+        <button class="fx-tbtn" data-act="fwd" title="Forward">▸</button>
+        <button class="fx-tbtn" data-act="up" title="Up">↑</button>
+        <div class="fx-addr" data-addr></div>
+        <button class="fx-tbtn" data-act="newfolder">New Folder</button>
+        <button class="fx-tbtn primary" data-act="newfile">New File</button>
+      </div>
+      <div class="fx-body">
+        <div class="fx-side">
+          <div class="grp">QUICK</div>
+          <div class="item" data-go="/Desktop"><span class="dot"></span>DESKTOP</div>
+          <div class="item" data-go="/Documents"><span class="dot"></span>DOCUMENTS</div>
+          <div class="item" data-go="/Pictures"><span class="dot"></span>PICTURES</div>
+          <div class="item" data-go="/Trash"><span class="dot"></span>TRASH</div>
+          <div class="grp">SYSTEM</div>
+          <div class="item" data-go="/"><span class="dot"></span>ROOT /</div>
+        </div>
+        <div class="fx-main" data-main></div>
+      </div>
+      <div class="fx-status">
+        <span data-count>0 ITEMS</span>
+        <span class="dim">NODE FS v1</span>
+        <span data-sel>—</span>
+      </div>
+    </div>
+  `;
+
+  const addr = root.querySelector('[data-addr]');
+  const main = root.querySelector('[data-main]');
+  const countEl = root.querySelector('[data-count]');
+  const selEl = root.querySelector('[data-sel]');
+
+  function navigate(path, pushHistory = true) {
+    path = NodeFS.normalize(path);
+    if (!NodeFS.exists(path)) return;
+    cwd = path;
+    if (pushHistory) {
+      history.splice(histIdx + 1);
+      history.push(cwd);
+      histIdx = history.length - 1;
+    }
+    render();
+  }
+
+  function render() {
+    addr.textContent = cwd;
+    // Update sidebar active
+    root.querySelectorAll('.fx-side .item').forEach(el => {
+      el.classList.toggle('active', el.dataset.go === cwd);
+    });
+
+    const items = NodeFS.list(cwd);
+    countEl.textContent = items.length + (items.length === 1 ? ' ITEM' : ' ITEMS');
+    selEl.textContent = '—';
+
+    if (items.length === 0) {
+      main.innerHTML = '<div class="fx-empty">— EMPTY FOLDER —<br><br>RIGHT-CLICK TO CREATE</div>';
+      attachEmptyContext();
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'fx-grid';
+    items.forEach(item => {
+      const itemPath = NodeFS.join(cwd, item.name);
+      const el = document.createElement('div');
+      el.className = 'fx-item ' + item.type;
+      if (item.type === 'file' && NodeFS.isImage(item.name)) el.classList.add('img');
+      const glyph = NodeFS.iconFor(item);
+      el.innerHTML = `<div class="ico">${glyph}</div><div>${escapeHtml(item.name)}</div>`;
+
+      el.addEventListener('click', (e) => {
+        grid.querySelectorAll('.fx-item').forEach(x => x.classList.remove('active'));
+        el.classList.add('active');
+        selEl.textContent = item.name.toUpperCase();
+      });
+      el.addEventListener('dblclick', () => openItem(itemPath));
+      el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        grid.querySelectorAll('.fx-item').forEach(x => x.classList.remove('active'));
+        el.classList.add('active');
+        selEl.textContent = item.name.toUpperCase();
+        showContextMenu(e.clientX, e.clientY, [
+          { label: 'Open', action: () => openItem(itemPath) },
+          { sep: true },
+          { label: 'Rename', action: () => doRename(itemPath) },
+          { label: 'Delete', action: () => doDelete(itemPath) },
+        ]);
+      });
+      grid.appendChild(el);
+    });
+    main.innerHTML = '';
+    main.appendChild(grid);
+    attachEmptyContext();
+  }
+
+  function attachEmptyContext() {
+    main.oncontextmenu = (e) => {
+      // Only fire if clicking empty area
+      if (e.target.closest('.fx-item')) return;
+      e.preventDefault();
+      showContextMenu(e.clientX, e.clientY, [
+        { label: 'New Folder', action: doNewFolder },
+        { label: 'New Note',   action: () => doNewFile('.txt') },
+        { sep: true },
+        { label: 'Refresh', action: render }
+      ]);
+    };
+  }
+
+  function openItem(path) {
+    const node = NodeFS.resolve(path);
+    if (!node) return;
+    if (node.type === 'folder') { navigate(path); return; }
+    if (NodeFS.ext(node.name) === 'txt' || node.mime === 'text/plain') {
+      openApp('notes', { path });
+    } else if (NodeFS.isImage(node.name)) {
+      openApp('viewer', { path });
+    } else {
+      nodeAlert('Files.node', 'No app registered for this file type yet.');
+    }
+  }
+
+  async function doNewFolder() {
+    const name = await nodePrompt('New Folder', 'Folder name:', 'New Folder', '');
+    if (!name) return;
+    if (!NodeFS.mkdir(cwd, name)) {
+      nodeAlert('Files.node', 'Could not create folder. Name may already exist.');
+      return;
+    }
+    render();
+  }
+
+  async function doNewFile(ext = '.txt') {
+    const name = await nodePrompt('New File', 'Filename:', 'untitled' + ext, '');
+    if (!name) return;
+    if (NodeFS.resolve(NodeFS.join(cwd, name))) {
+      nodeAlert('Files.node', 'A file with that name already exists.');
+      return;
+    }
+    NodeFS.writeFile(cwd, name, '', 'text/plain');
+    render();
+    openApp('notes', { path: NodeFS.join(cwd, name) });
+  }
+
+  async function doRename(path) {
+    const oldName = NodeFS.basename(path);
+    const name = await nodePrompt('Rename', 'New name:', oldName, '');
+    if (!name || name === oldName) return;
+    if (!NodeFS.rename(path, name)) {
+      nodeAlert('Files.node', 'Rename failed. Name may already exist.');
+      return;
+    }
+    render();
+  }
+
+  async function doDelete(path) {
+    const ok = await nodeConfirm('Delete', 'Delete "' + NodeFS.basename(path) + '"?\nThis cannot be undone.');
+    if (!ok) return;
+    NodeFS.remove(path);
+    render();
+  }
+
+  // Toolbar wiring
+  root.querySelector('[data-act="back"]').onclick = () => {
+    if (histIdx > 0) { histIdx--; cwd = history[histIdx]; render(); }
+  };
+  root.querySelector('[data-act="fwd"]').onclick = () => {
+    if (histIdx < history.length - 1) { histIdx++; cwd = history[histIdx]; render(); }
+  };
+  root.querySelector('[data-act="up"]').onclick = () => {
+    if (cwd === '/') return;
+    navigate(NodeFS.parent(cwd));
+  };
+  root.querySelector('[data-act="newfolder"]').onclick = doNewFolder;
+  root.querySelector('[data-act="newfile"]').onclick = () => doNewFile('.txt');
+
+  // Sidebar wiring
+  root.querySelectorAll('.fx-side .item').forEach(el => {
+    el.onclick = () => navigate(el.dataset.go);
+  });
+
+  render();
+  return root;
+}
+
+/* ============================================================
+   NOTES APP
+   ============================================================ */
+function buildNotesApp(initialPath = null) {
+  const root = document.createElement('div');
+  root.style.display = 'flex';
+  root.style.flexDirection = 'column';
+  root.style.flex = '1';
+  root.style.minHeight = '0';
+
+  let currentPath = initialPath;
+  let dirty = false;
+  let saveTimer = null;
+
+  root.innerHTML = `
+    <div class="notes-app">
+      <div class="notes-toolbar">
+        <button class="fx-tbtn" data-act="new">New</button>
+        <button class="fx-tbtn primary" data-act="save">Save</button>
+        <input type="text" class="notes-name" data-name placeholder="untitled.txt" />
+      </div>
+      <textarea class="notes-area" data-area spellcheck="false"></textarea>
+      <div class="notes-status">
+        <span data-path>—</span>
+        <span data-stats class="dim" style="color: rgba(255,255,255,0.55)">0 chars</span>
+        <span data-state>READY</span>
+      </div>
+    </div>
+  `;
+
+  const nameInput = root.querySelector('[data-name]');
+  const area = root.querySelector('[data-area]');
+  const pathEl = root.querySelector('[data-path]');
+  const stateEl = root.querySelector('[data-state]');
+  const statsEl = root.querySelector('[data-stats]');
+
+  function loadFromPath(path) {
+    const node = NodeFS.resolve(path);
+    if (!node || node.type !== 'file') return;
+    currentPath = path;
+    area.value = node.content || '';
+    nameInput.value = node.name;
+    pathEl.textContent = path.toUpperCase();
+    dirty = false;
+    updateState();
+    updateStats();
+  }
+
+  function updateState() {
+    stateEl.textContent = dirty ? '● UNSAVED' : '● SAVED';
+    stateEl.style.color = dirty ? '#FBC02D' : 'var(--accent)';
+  }
+  function updateStats() {
+    const v = area.value;
+    statsEl.textContent = `${v.length} chars | ${v.split(/\s+/).filter(Boolean).length} words`;
+  }
+
+  if (initialPath) loadFromPath(initialPath);
+  else {
+    nameInput.value = 'untitled.txt';
+    pathEl.textContent = '— UNSAVED —';
+    updateState();
+    updateStats();
+  }
+
+  area.addEventListener('input', () => {
+    dirty = true;
+    updateState();
+    updateStats();
+    if (currentPath) {
+      // Autosave debounced
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        NodeFS.writeFile(NodeFS.parent(currentPath), NodeFS.basename(currentPath), area.value, 'text/plain');
+        dirty = false;
+        updateState();
+      }, 800);
+    }
+  });
+
+  nameInput.addEventListener('input', () => { dirty = true; updateState(); });
+
+  root.querySelector('[data-act="new"]').onclick = async () => {
+    if (dirty) {
+      const ok = await nodeConfirm('Notes.node', 'Discard unsaved changes?');
+      if (!ok) return;
+    }
+    currentPath = null;
+    nameInput.value = 'untitled.txt';
+    area.value = '';
+    pathEl.textContent = '— UNSAVED —';
+    dirty = false;
+    updateState();
+    updateStats();
+    area.focus();
+  };
+
+  root.querySelector('[data-act="save"]').onclick = async () => {
+    let name = nameInput.value.trim();
+    if (!name) {
+      nodeAlert('Notes.node', 'Give the file a name first.');
+      return;
+    }
+    if (!name.includes('.')) name += '.txt';
+    nameInput.value = name;
+    const targetDir = currentPath ? NodeFS.parent(currentPath) : '/Documents';
+    const targetPath = NodeFS.join(targetDir, name);
+
+    // If renaming an existing file
+    if (currentPath && NodeFS.basename(currentPath) !== name) {
+      // Just write under new name and remove old
+      const oldPath = currentPath;
+      NodeFS.writeFile(targetDir, name, area.value, 'text/plain');
+      if (oldPath !== targetPath) NodeFS.remove(oldPath);
+    } else {
+      NodeFS.writeFile(targetDir, name, area.value, 'text/plain');
+    }
+    currentPath = targetPath;
+    pathEl.textContent = targetPath.toUpperCase();
+    dirty = false;
+    updateState();
+    refreshOpenFilesWindows();
+  };
+
+  return root;
+}
+
+/* ============================================================
+   IMAGE VIEWER APP
+   ============================================================ */
+function buildImageViewer(path) {
+  const root = document.createElement('div');
+  root.style.display = 'flex';
+  root.style.flexDirection = 'column';
+  root.style.flex = '1';
+  root.style.minHeight = '0';
+
+  const node = NodeFS.resolve(path);
+  const dataUrl = node && node.type === 'file' ? node.content : null;
+
+  root.innerHTML = `
+    <div class="iv-app">
+      <div class="iv-toolbar">
+        <span>● ${escapeHtml(path)}</span>
+        <span style="flex:1"></span>
+        <button class="fx-tbtn" data-act="download">Download</button>
+        <button class="fx-tbtn danger" data-act="delete">Delete</button>
+      </div>
+      <div class="iv-canvas">
+        ${dataUrl ? `<img src="${dataUrl}" alt="${escapeHtml(node.name)}">` : '<div class="fx-empty">— FILE NOT FOUND —</div>'}
+      </div>
+    </div>
+  `;
+
+  root.querySelector('[data-act="download"]')?.addEventListener('click', () => {
+    if (!dataUrl) return;
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = node.name;
+    a.click();
+  });
+  root.querySelector('[data-act="delete"]')?.addEventListener('click', async () => {
+    const ok = await nodeConfirm('Viewer.node', 'Delete "' + node.name + '"?');
+    if (!ok) return;
+    NodeFS.remove(path);
+    closeWindow('viewer:' + path);
+    refreshOpenFilesWindows();
+  });
+
+  return root;
+}
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[c]);
+}
+
+// Re-render any open Files windows after FS changes
+function refreshOpenFilesWindows() {
+  Object.entries(openWindows).forEach(([id, w]) => {
+    if (id === 'files') {
+      // Recreate window content
+      const body = w.el.querySelector('.window-body');
+      const oldNode = body.firstChild;
+      if (oldNode) oldNode.remove();
+      body.appendChild(buildFilesApp('/'));
+    }
+  });
+}
+
+/* ============================================================
+   INTERNET — buildBrowserApp + NodeBrowser controller
+   ============================================================ */
+const NodeBrowser = {
+  controllers: new Map(),
+  register(id, ctrl) { this.controllers.set(id, ctrl); },
+  unregister(id) { this.controllers.delete(id); },
+  openInActive(url) {
+    const ctrl = this.controllers.get('browser');
+    if (ctrl) ctrl.openTab(url);
+  }
+};
+
+function buildBrowserApp(initialUrl = null) {
+  const root = document.createElement('div');
+  root.style.display = 'flex';
+  root.style.flexDirection = 'column';
+  root.style.flex = '1';
+  root.style.minHeight = '0';
+
+  const tabs = [];
+  let activeTabId = null;
+  let nextTabId = 1;
+
+  const bookmarks = [
+    { name: 'Wikipedia',  icon: 'W', url: 'https://en.wikipedia.org/wiki/Main_Page' },
+    { name: 'DuckDuckGo', icon: 'D', url: 'https://html.duckduckgo.com/html/' },
+    { name: 'Example',    icon: '◌', url: 'https://example.com' },
+    { name: 'NPR Text',   icon: '◉', url: 'https://text.npr.org' },
+    { name: 'CNN Lite',   icon: '⊕', url: 'https://lite.cnn.com' },
+    { name: 'MDN Docs',   icon: '⌘', url: 'https://developer.mozilla.org' },
+    { name: 'Gutenberg',  icon: '✠', url: 'https://www.gutenberg.org' },
+    { name: 'Old Reddit', icon: 'R', url: 'https://old.reddit.com' },
+  ];
+
+  root.innerHTML = `
+    <div class="br-app">
+      <div class="br-tabs" data-tabs></div>
+      <div class="br-toolbar">
+        <button class="fx-tbtn" data-act="back" title="Back">◂</button>
+        <button class="fx-tbtn" data-act="fwd" title="Forward">▸</button>
+        <button class="fx-tbtn" data-act="reload" title="Reload">↻</button>
+        <button class="fx-tbtn" data-act="home" title="Home">⌂</button>
+        <input class="br-addr" data-addr placeholder="search the web or enter URL..." spellcheck="false" />
+        <button class="fx-tbtn primary" data-act="go">GO</button>
+        <button class="fx-tbtn" data-act="external" title="Open in real browser">↗</button>
+      </div>
+      <div class="br-content" data-content></div>
+    </div>
+  `;
+
+  const tabsBar = root.querySelector('[data-tabs]');
+  const content = root.querySelector('[data-content]');
+  const addr    = root.querySelector('[data-addr]');
+
+  function activeTab() { return tabs.find(t => t.id === activeTabId); }
+
+  function newTab(url = null) {
+    const id = nextTabId++;
+    tabs.push({ id, title: url ? 'Loading...' : 'New Tab', url, history: url ? [url] : [], histIdx: url ? 0 : -1 });
+    activeTabId = id;
+    renderTabs();
+    renderContent();
+  }
+
+  function closeTab(id) {
+    const idx = tabs.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    tabs.splice(idx, 1);
+    if (activeTabId === id) activeTabId = tabs.length ? tabs[Math.max(0, idx - 1)].id : null;
+    if (tabs.length === 0) newTab();
+    else { renderTabs(); renderContent(); }
+  }
+
+  function renderTabs() {
+    tabsBar.innerHTML = '';
+    tabs.forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'br-tab' + (t.id === activeTabId ? ' active' : '');
+      el.innerHTML = `
+        <span class="br-tab-title">${escapeHtml(t.title || 'New Tab')}</span>
+        <span class="br-tab-close" data-close>×</span>
+      `;
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('[data-close]')) { closeTab(t.id); return; }
+        activeTabId = t.id;
+        renderTabs(); renderContent();
+      });
+      tabsBar.appendChild(el);
+    });
+    const add = document.createElement('button');
+    add.className = 'br-newtab';
+    add.textContent = '+';
+    add.title = 'New tab';
+    add.onclick = () => newTab();
+    tabsBar.appendChild(add);
+  }
+
+  function buildHome() {
+    const home = document.createElement('div');
+    home.className = 'br-home';
+    home.innerHTML = `
+      <div class="br-logo">NODE<span class="accent">/</span>NET</div>
+      <div class="br-tag">— browse the open web —</div>
+      <form id="brh-form">
+        <input type="text" class="br-search" placeholder="search or enter URL" autocomplete="off" spellcheck="false" />
+        <button type="submit" class="br-go">GO</button>
+      </form>
+      <div class="br-marks"></div>
+    `;
+    const marksEl = home.querySelector('.br-marks');
+    bookmarks.forEach(bm => {
+      const el = document.createElement('div');
+      el.className = 'br-mark';
+      let host = '';
+      try { host = new URL(bm.url).hostname.replace('www.', ''); } catch {}
+      el.innerHTML = `
+        <div class="mk-icon">${escapeHtml(bm.icon)}</div>
+        <div class="mk-name">${escapeHtml(bm.name)}</div>
+        <div class="mk-host">${escapeHtml(host)}</div>
+      `;
+      el.onclick = () => navigate(bm.url, bm.name);
+      marksEl.appendChild(el);
+    });
+    home.querySelector('#brh-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = home.querySelector('.br-search').value.trim();
+      if (v) navigate(v);
+    });
+    setTimeout(() => home.querySelector('.br-search').focus(), 80);
+    return home;
+  }
+
+  function renderContent() {
+    content.innerHTML = '';
+    const tab = activeTab();
+    if (!tab) return;
+    addr.value = tab.url || '';
+    if (!tab.url) {
+      content.appendChild(buildHome());
+      tab.title = 'NODE/NET';
+      renderTabs();
+      return;
+    }
+    const iframe = document.createElement('iframe');
+    iframe.className = 'br-iframe';
+    iframe.src = tab.url;
+    iframe.referrerPolicy = 'no-referrer';
+    iframe.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox';
+    content.appendChild(iframe);
+
+    const fallback = document.createElement('div');
+    fallback.className = 'br-frame-fallback';
+    fallback.innerHTML = `
+      <h3>SITE BLOCKS EMBEDDING</h3>
+      <p>This site sends headers (X-Frame-Options or CSP) preventing it from loading inside another page.<br><br>
+      Google, YouTube, GitHub and most large sites do this. A real browser inside NODE will need a backend proxy — that lands in Phase 2 of the roadmap.</p>
+      <button class="fx-tbtn primary">↗ OPEN EXTERNALLY</button>
+    `;
+    fallback.querySelector('button').onclick = () => window.open(tab.url, '_blank');
+    content.appendChild(fallback);
+
+    let loaded = false;
+    iframe.addEventListener('load', () => {
+      loaded = true;
+      try {
+        const t = iframe.contentDocument?.title;
+        if (t) tab.title = t.slice(0, 40);
+        else throw 0;
+      } catch (e) {
+        try {
+          const u = new URL(tab.url);
+          tab.title = u.hostname.replace('www.', '');
+        } catch (_) { tab.title = tab.url.slice(0, 30); }
+      }
+      renderTabs();
+    });
+    setTimeout(() => { if (!loaded) fallback.classList.add('show'); }, 5000);
+  }
+
+  function navigate(input, title=null) {
+    let u = String(input).trim();
+    if (!u) return;
+    const looksLikeUrl = /^https?:\/\//i.test(u) || /^[a-z0-9-]+(\.[a-z]{2,})+(\/.*)?$/i.test(u);
+    if (!looksLikeUrl) {
+      u = 'https://html.duckduckgo.com/html/?q=' + encodeURIComponent(u);
+    } else if (!/^https?:\/\//i.test(u)) {
+      u = 'https://' + u;
+    }
+    const tab = activeTab();
+    if (!tab) return;
+    tab.url = u;
+    if (title) tab.title = title;
+    tab.history.splice(tab.histIdx + 1);
+    tab.history.push(u);
+    tab.histIdx = tab.history.length - 1;
+    renderContent();
+  }
+
+  root.querySelector('[data-act="back"]').onclick = () => {
+    const tab = activeTab();
+    if (!tab || tab.histIdx <= 0) return;
+    tab.histIdx--; tab.url = tab.history[tab.histIdx]; renderContent();
+  };
+  root.querySelector('[data-act="fwd"]').onclick = () => {
+    const tab = activeTab();
+    if (!tab || tab.histIdx >= tab.history.length - 1) return;
+    tab.histIdx++; tab.url = tab.history[tab.histIdx]; renderContent();
+  };
+  root.querySelector('[data-act="reload"]').onclick = () => renderContent();
+  root.querySelector('[data-act="home"]').onclick = () => {
+    const tab = activeTab();
+    if (!tab) return;
+    tab.url = null;
+    renderContent();
+  };
+  root.querySelector('[data-act="go"]').onclick = () => navigate(addr.value);
+  root.querySelector('[data-act="external"]').onclick = () => {
+    const tab = activeTab();
+    if (tab?.url) window.open(tab.url, '_blank');
+  };
+  addr.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') navigate(addr.value);
+  });
+
+  NodeBrowser.register('browser', { openTab: newTab });
+
+  newTab(initialUrl);
+  return root;
+}
+
+/* ============================================================
+   COMMS — unified voice + chat + screen share
+   ============================================================ */
+const NodeComms = {
+  channels: ['The Lounge', 'Gaming', 'Music', 'Quiet Room'],
+  channel: 'The Lounge',
+  CHAT_KEY: 'node-chat-v1',
+  PREFS_KEY: 'node-voice-prefs-v1',
+  messages: {},
+  userPrefs: {},
+  // Firebase
+  fbDb: null,
+  fbUser: null,
+  _channelOff: null,
+  _renderHook: null,
+  // Voice state
+  micStream: null,
+  audioCtx: null,
+  analyser: null,
+  micEnabled: false,
+  joined: false,
+  deafened: false,
+  // Screen state
+  screenStream: null,
+  screenActive: false,
+
+  init() {
+    try { this.messages = JSON.parse(localStorage.getItem(this.CHAT_KEY)) || {}; }
+    catch { this.messages = {}; }
+    try { this.userPrefs = JSON.parse(localStorage.getItem(this.PREFS_KEY)) || {}; }
+    catch { this.userPrefs = {}; }
+    if (!this.messages[this.channel] || this.messages[this.channel].length === 0) {
+      this.messages[this.channel] = [{
+        id: 'sys-1', system: true,
+        text: 'Welcome to COMMS — voice, chat, and screen share in one app.\nPaste a link, hit GO, and your friends will see it click-to-open in NODE/NET.\nReal peer-to-peer streaming arrives in Phase 4.',
+        ts: Date.now()
+      }];
+      this.saveChat();
+    }
+  },
+
+  saveChat()  { localStorage.setItem(this.CHAT_KEY,  JSON.stringify(this.messages)); },
+  savePrefs() { localStorage.setItem(this.PREFS_KEY, JSON.stringify(this.userPrefs)); },
+
+  prefFor(id) {
+    if (!this.userPrefs[id]) this.userPrefs[id] = { volume: 100, muted: false };
+    return this.userPrefs[id];
+  },
+
+  msgList() { return this.messages[this.channel] || []; },
+
+  // ----- Firebase sync layer -----
+  channelSlug(name) {
+    return String(name || this.channel).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  },
+
+  attachFirebase(db, user) {
+    this.fbDb = db;
+    this.fbUser = user;
+    this.subscribeToChannel();
+  },
+
+  subscribeToChannel() {
+    if (!this.fbDb) return;
+    // Unsubscribe from any previous channel
+    if (this._channelOff) { try { this._channelOff(); } catch {} this._channelOff = null; }
+    const ref = this.fbDb.ref('channels/' + this.channelSlug() + '/messages').limitToLast(200);
+    const handler = (snap) => {
+      const key = snap.key;
+      const data = snap.val() || {};
+      const id = 'fb_' + key;
+      const arr = this.messages[this.channel] || (this.messages[this.channel] = []);
+      // Dedup
+      if (arr.find(m => m.id === id)) return;
+      arr.push({
+        id,
+        senderId: data.senderId,
+        senderName: data.senderName,
+        senderColor: data.senderColor,
+        text: data.text,
+        ts: typeof data.ts === 'number' ? data.ts : Date.now(),
+        system: !!data.system
+      });
+      // Keep time order (Firebase delivers in order, but be safe)
+      arr.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+      if (arr.length > 200) arr.splice(0, arr.length - 200);
+      this.saveChat();
+      if (this._renderHook) this._renderHook();
+    };
+    ref.on('child_added', handler);
+    this._channelOff = () => ref.off('child_added', handler);
+  },
+
+  setChannel(name) {
+    if (this.channel === name) return;
+    this.channel = name;
+    this.subscribeToChannel();
+    if (this._renderHook) this._renderHook();
+  },
+
+  _push(payload) {
+    if (this.fbDb && this.fbUser) {
+      try {
+        return this.fbDb.ref('channels/' + this.channelSlug() + '/messages').push({
+          ...payload,
+          ts: firebase.database.ServerValue.TIMESTAMP
+        }).catch(err => {
+          console.warn('[NODE] Firebase push failed, falling back to local:', err);
+          this._pushLocal(payload);
+        });
+      } catch (e) {
+        this._pushLocal(payload);
+        return Promise.resolve();
+      }
+    } else {
+      this._pushLocal(payload);
+      return Promise.resolve();
+    }
+  },
+
+  _pushLocal(payload) {
+    const arr = this.messages[this.channel] || (this.messages[this.channel] = []);
+    arr.push({
+      id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      ts: Date.now(),
+      ...payload
+    });
+    if (arr.length > 200) arr.splice(0, arr.length - 200);
+    this.saveChat();
+    if (this._renderHook) this._renderHook();
+  },
+
+  sendMessage(text, profileId) {
+    text = String(text).trim();
+    if (!text) return;
+    const p = NodeProfiles.list.find(x => x.id === profileId);
+    this._push({
+      senderId: this.fbUser?.uid || profileId,
+      senderName: p?.name || 'NODE',
+      senderColor: p?.color || '#999',
+      text
+    });
+  },
+
+  sendSystem(text) {
+    const p = NodeProfiles.home();
+    this._push({
+      system: true,
+      senderId: this.fbUser?.uid || NodeProfiles.homeId,
+      senderName: p?.name || 'SYSTEM',
+      senderColor: p?.color || '#888',
+      text
+    });
+  },
+
+  members() {
+    return NodeProfiles.list.map(p => ({ ...p, isHome: p.id === NodeProfiles.homeId }));
+  },
+
+  async enableMic() {
+    if (this.micEnabled) return true;
+    try {
+      this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = this.audioCtx.createMediaStreamSource(this.micStream);
+      this.analyser = this.audioCtx.createAnalyser();
+      this.analyser.fftSize = 256;
+      source.connect(this.analyser);
+      this.micEnabled = true;
+      return true;
+    } catch (e) {
+      nodeAlert('Comms', 'Microphone access denied or unavailable:\n\n' + e.message);
+      return false;
+    }
+  },
+
+  disableMic() {
+    if (this.micStream) { this.micStream.getTracks().forEach(t => t.stop()); this.micStream = null; }
+    if (this.audioCtx) { try { this.audioCtx.close(); } catch {} this.audioCtx = null; }
+    this.analyser = null;
+    this.micEnabled = false;
+  },
+
+  async startScreenShare(onEnd) {
+    if (this.screenActive) return true;
+    try {
+      this.screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      this.screenActive = true;
+      const track = this.screenStream.getVideoTracks()[0];
+      if (track) track.addEventListener('ended', () => {
+        this.stopScreenShare();
+        if (typeof onEnd === 'function') onEnd();
+      });
+      return true;
+    } catch (e) {
+      if (e.name !== 'NotAllowedError') {
+        nodeAlert('Comms', 'Could not start screen share:\n\n' + e.message);
+      }
+      return false;
+    }
+  },
+
+  stopScreenShare() {
+    if (this.screenStream) { this.screenStream.getTracks().forEach(t => t.stop()); this.screenStream = null; }
+    this.screenActive = false;
+  }
+};
+
+function buildCommsApp() {
+  const root = document.createElement('div');
+  root.style.display = 'flex';
+  root.style.flexDirection = 'column';
+  root.style.flex = '1';
+  root.style.minHeight = '0';
+
+  let meterTicker = null;
+  let simTimer = null;
+
+  root.innerHTML = `
+    <div class="cm-app">
+      <div class="cm-header">
+        <span class="cm-ch-dot"></span>
+        <span class="cm-ch-name" data-channel>THE LOUNGE</span>
+        <span class="cm-counter" data-counter>0 ONLINE</span>
+      </div>
+      <div class="cm-body">
+        <div class="cm-members">
+          <div class="cm-mhdr">IN CHANNEL</div>
+          <div data-mlist></div>
+        </div>
+        <div class="cm-main">
+          <div class="cm-tabs">
+            <button class="cm-tab" data-tab="chat">◧ CHAT</button>
+            <button class="cm-tab" data-tab="voice">◐ VOICE</button>
+            <button class="cm-tab" data-tab="screen">◫ SCREEN</button>
+          </div>
+          <div class="cm-pane" data-pane="chat">
+            <div class="cm-chat-feed" data-feed></div>
+            <div class="cm-chat-input">
+              <input type="text" placeholder="message #the-lounge — links auto-detected" data-input maxlength="500" />
+              <button data-send>SEND</button>
+            </div>
+          </div>
+          <div class="cm-pane cm-voice" data-pane="voice">
+            <div class="vc-status">STATUS: <span class="ind" data-vstatus>IDLE</span></div>
+            <div class="vc-mic-vis" data-vmic><span class="vc-ring"></span>🎙</div>
+            <div class="vc-meter"><div class="vc-bar" data-vbar></div></div>
+            <button class="vc-join" data-vjoin>JOIN VOICE</button>
+            <div class="vc-status" style="font-size:9px; max-width:380px; letter-spacing: 1px; opacity:0.7">REAL PEER VOICE ARRIVES IN PHASE 4. UNTIL THEN, JOIN ACTIVATES YOUR MIC + LEVEL METER. OTHER PROFILES APPEAR AS MOCK PRESENCE.</div>
+          </div>
+          <div class="cm-pane cm-screen" data-pane="screen">
+            <div class="ss-stage" data-sstage></div>
+            <div class="ss-controls">
+              <button class="ss-btn" data-sshare>● START SHARING</button>
+            </div>
+          </div>
+          <div class="cm-toolbar">
+            <button class="cm-tbtn" data-tbn="mic" title="Toggle mic">🎙</button>
+            <button class="cm-tbtn" data-tbn="deafen" title="Mute speakers">🔊</button>
+            <button class="cm-tbtn" data-tbn="screen" title="Toggle screen share">◫</button>
+            <button class="cm-tbtn" data-tbn="leave" title="Leave channel">⎋</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const chName   = root.querySelector('[data-channel]');
+  const counter  = root.querySelector('[data-counter]');
+  const mlist    = root.querySelector('[data-mlist]');
+  const feed     = root.querySelector('[data-feed]');
+  const chatInput= root.querySelector('[data-input]');
+  const sendBtn  = root.querySelector('[data-send]');
+  const vstatus  = root.querySelector('[data-vstatus]');
+  const vmic     = root.querySelector('[data-vmic]');
+  const vbar     = root.querySelector('[data-vbar]');
+  const vjoin    = root.querySelector('[data-vjoin]');
+  const sstage   = root.querySelector('[data-sstage]');
+  const sshare   = root.querySelector('[data-sshare]');
+  const tabBtns  = root.querySelectorAll('.cm-tab');
+  const panes    = root.querySelectorAll('.cm-pane');
+  const tbtns    = root.querySelectorAll('[data-tbn]');
+
+  function switchTab(name) {
+    tabBtns.forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    panes.forEach(p => p.classList.toggle('active', p.dataset.pane === name));
+    if (name === 'chat') setTimeout(() => chatInput.focus(), 50);
+  }
+  tabBtns.forEach(t => t.onclick = () => switchTab(t.dataset.tab));
+  switchTab('chat');
+
+  // Channel switcher
+  chName.onclick = () => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <div class="modal-title">SELECT CHANNEL</div>
+        <div class="modal-body" style="padding: 0">
+          ${NodeComms.channels.map(c => `
+            <div class="vc-opt" data-ch="${escapeHtml(c)}" style="padding: 12px 18px; cursor: pointer; border-bottom: 1px solid #eee; ${c === NodeComms.channel ? 'background: var(--accent); color: var(--ink); font-weight: bold;' : ''}">
+              ● ${escapeHtml(c)}
+            </div>
+          `).join('')}
+        </div>
+        <div class="modal-actions"><button id="vc-cancel">Cancel</button></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelectorAll('.vc-opt').forEach(o => {
+      o.onclick = () => {
+        NodeComms.setChannel(o.dataset.ch);
+        overlay.remove();
+        renderAll();
+      };
+    });
+    overlay.querySelector('#vc-cancel').onclick = () => overlay.remove();
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  };
+
+  function renderMembers() {
+    const members = NodeComms.members();
+    counter.textContent = members.length + ' ONLINE';
+    mlist.innerHTML = '';
+    members.forEach(m => {
+      const pref = NodeComms.prefFor(m.id);
+      const el = document.createElement('div');
+      el.className = 'cm-member' + (pref.muted ? ' muted' : '');
+      el.dataset.uid = m.id;
+      el.innerHTML = `
+        <div class="cm-row">
+          <div class="cm-mdot" style="background:${m.color}"></div>
+          <div class="cm-mname">${escapeHtml(m.name)}${m.isHome ? ' [YOU]' : ''}</div>
+          <button class="cm-mmute ${pref.muted ? 'on' : ''}" title="Mute user">${pref.muted ? '🔇' : '♪'}</button>
+        </div>
+        ${m.isHome ? '' : `<input type="range" class="cm-mvol" min="0" max="100" value="${pref.volume}" title="${escapeHtml(m.name)} volume" />`}
+      `;
+      el.querySelector('.cm-mmute').onclick = (e) => {
+        e.stopPropagation();
+        pref.muted = !pref.muted;
+        NodeComms.savePrefs();
+        renderMembers();
+      };
+      const vol = el.querySelector('.cm-mvol');
+      if (vol) vol.oninput = (e) => { pref.volume = parseInt(e.target.value, 10); NodeComms.savePrefs(); };
+      mlist.appendChild(el);
+    });
+  }
+
+  function linkify(text) {
+    const escaped = escapeHtml(text);
+    return escaped.replace(/((?:https?:\/\/|www\.)[^\s<]+)/gi, (match) => {
+      let url = match;
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      return `<a href="#" data-url="${escapeHtml(url)}">${escapeHtml(match)}</a>`;
+    });
+  }
+
+  function renderChat() {
+    const msgs = NodeComms.msgList();
+    feed.innerHTML = '';
+    if (msgs.length === 0) {
+      feed.innerHTML = '<div class="cm-chat-empty">— NO MESSAGES YET —<br><br>SAY HI</div>';
+      return;
+    }
+    msgs.forEach(m => {
+      const el = document.createElement('div');
+      el.className = 'cm-msg' + (m.system ? ' system' : '');
+      let who = 'SYSTEM', color = '#888';
+      if (m.senderName) {
+        // Firebase-carried sender info (from another browser, or our own echo)
+        who = m.senderName;
+        color = m.senderColor || '#888';
+      } else if (!m.system) {
+        // Legacy local-only message — look up profile
+        const p = NodeProfiles.list.find(x => x.id === m.profileId);
+        if (p) { who = p.name; color = p.color; }
+        else { who = '???'; color = '#888'; }
+      }
+      const time = new Date(m.ts);
+      const pad = n => String(n).padStart(2, '0');
+      const timeStr = pad(time.getHours()) + ':' + pad(time.getMinutes());
+      el.innerHTML = `
+        <div class="cm-mdot" style="background:${color}"></div>
+        <div class="cm-mbox">
+          <div class="cm-mhead"><span class="cm-who">${escapeHtml(who)}</span><span class="cm-when">${timeStr}</span></div>
+          <div class="cm-mtext">${linkify(m.text)}</div>
+        </div>
+      `;
+      feed.appendChild(el);
+    });
+    feed.querySelectorAll('a[data-url]').forEach(a => {
+      a.onclick = (e) => {
+        e.preventDefault();
+        openApp('browser', { url: a.dataset.url });
+      };
+    });
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  function send() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    NodeComms.sendMessage(text, NodeProfiles.homeId);
+    chatInput.value = '';
+    renderChat();
+  }
+  sendBtn.onclick = send;
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); send(); }
+  });
+
+  function startMeter() {
+    if (meterTicker) cancelAnimationFrame(meterTicker);
+    if (!NodeComms.analyser) return;
+    const data = new Uint8Array(NodeComms.analyser.frequencyBinCount);
+    const tick = () => {
+      if (!NodeComms.micEnabled || !NodeComms.analyser) { vbar.style.width = '0%'; return; }
+      NodeComms.analyser.getByteFrequencyData(data);
+      let sum = 0; for (let i = 0; i < data.length; i++) sum += data[i];
+      const avg = sum / data.length;
+      const pct = Math.min(100, (avg / 80) * 100);
+      vbar.style.width = pct + '%';
+      const homeUser = mlist.querySelector(`.cm-member[data-uid="${NodeProfiles.homeId}"]`);
+      if (homeUser) homeUser.classList.toggle('speaking', avg > 25);
+      meterTicker = requestAnimationFrame(tick);
+    };
+    meterTicker = requestAnimationFrame(tick);
+  }
+
+  async function joinVoice() {
+    if (NodeComms.joined) return;
+    const ok = await NodeComms.enableMic();
+    if (!ok) return;
+    NodeComms.joined = true;
+    vstatus.textContent = 'CONNECTED';
+    vmic.classList.add('on'); vmic.classList.remove('off');
+    vjoin.textContent = 'LEAVE VOICE';
+    vjoin.classList.add('leave');
+    startMeter();
+    refreshToolbar();
+    NodeComms.sendSystem(`${NodeProfiles.home()?.name || 'YOU'} joined voice.`);
+    renderChat();
+  }
+
+  function leaveVoice() {
+    NodeComms.disableMic();
+    NodeComms.joined = false;
+    if (meterTicker) { cancelAnimationFrame(meterTicker); meterTicker = null; }
+    vbar.style.width = '0%';
+    vstatus.textContent = 'IDLE';
+    vmic.classList.remove('on');
+    vjoin.textContent = 'JOIN VOICE';
+    vjoin.classList.remove('leave');
+    const homeUser = mlist.querySelector(`.cm-member[data-uid="${NodeProfiles.homeId}"]`);
+    if (homeUser) homeUser.classList.remove('speaking');
+    refreshToolbar();
+    NodeComms.sendSystem(`${NodeProfiles.home()?.name || 'YOU'} left voice.`);
+    renderChat();
+  }
+  vjoin.onclick = () => NodeComms.joined ? leaveVoice() : joinVoice();
+
+  function renderScreen() {
+    sstage.innerHTML = '';
+    if (NodeComms.screenActive && NodeComms.screenStream) {
+      const live = document.createElement('div');
+      live.className = 'ss-live';
+      live.textContent = '● LIVE';
+      sstage.appendChild(live);
+      const video = document.createElement('video');
+      video.autoplay = true; video.muted = true; video.playsInline = true;
+      video.srcObject = NodeComms.screenStream;
+      sstage.appendChild(video);
+      sshare.textContent = '■ STOP SHARING';
+      sshare.classList.add('stop');
+    } else {
+      sstage.innerHTML = `
+        <div class="ss-idle">
+          <div class="ss-tag">◫ SCREEN SHARE</div>
+          <p>Share your screen, window, or tab with friends.</p>
+          <p>Previews locally now — peers see it in Phase 4.</p>
+        </div>
+      `;
+      sshare.textContent = '● START SHARING';
+      sshare.classList.remove('stop');
+    }
+  }
+  sshare.onclick = async () => {
+    if (NodeComms.screenActive) {
+      NodeComms.stopScreenShare();
+      renderScreen(); refreshToolbar();
+      NodeComms.sendSystem(`${NodeProfiles.home()?.name || 'YOU'} stopped sharing.`);
+      renderChat();
+    } else {
+      const ok = await NodeComms.startScreenShare(() => {
+        renderScreen(); refreshToolbar();
+        NodeComms.sendSystem(`${NodeProfiles.home()?.name || 'YOU'} stopped sharing.`);
+        renderChat();
+      });
+      if (!ok) return;
+      renderScreen(); refreshToolbar();
+      NodeComms.sendSystem(`${NodeProfiles.home()?.name || 'YOU'} started sharing their screen.`);
+      renderChat();
+    }
+  };
+
+  function refreshToolbar() {
+    tbtns.forEach(b => {
+      const k = b.dataset.tbn;
+      b.classList.remove('on', 'off');
+      if (k === 'mic')    b.classList.toggle('on', NodeComms.micEnabled);
+      if (k === 'deafen') b.classList.toggle('off', NodeComms.deafened);
+      if (k === 'screen') b.classList.toggle('on', NodeComms.screenActive);
+    });
+  }
+  tbtns.forEach(b => b.onclick = async () => {
+    const k = b.dataset.tbn;
+    if (k === 'mic') {
+      if (!NodeComms.joined) { await joinVoice(); return; }
+      if (NodeComms.micEnabled) { NodeComms.disableMic(); refreshToolbar(); }
+      else { await NodeComms.enableMic(); startMeter(); refreshToolbar(); }
+    } else if (k === 'deafen') {
+      NodeComms.deafened = !NodeComms.deafened;
+      refreshToolbar();
+    } else if (k === 'screen') {
+      if (NodeComms.screenActive) { NodeComms.stopScreenShare(); }
+      else { await NodeComms.startScreenShare(() => { renderScreen(); refreshToolbar(); }); }
+      renderScreen(); refreshToolbar();
+    } else if (k === 'leave') {
+      if (NodeComms.joined) leaveVoice();
+      if (NodeComms.screenActive) { NodeComms.stopScreenShare(); renderScreen(); refreshToolbar(); }
+    }
+  });
+
+  function renderAll() {
+    chName.textContent = NodeComms.channel.toUpperCase();
+    chatInput.placeholder = 'message #' + NodeComms.channel.toLowerCase().replace(/\s+/g, '-') + ' — links auto-detected';
+    renderMembers(); renderChat(); renderScreen(); refreshToolbar();
+    if (NodeComms.joined) startMeter();
+  }
+  // Live updates from Firebase: when a message arrives, refresh the chat feed.
+  NodeComms._renderHook = () => {
+    if (!openWindows['comms']) return;
+    chName.textContent = NodeComms.channel.toUpperCase();
+    chatInput.placeholder = 'message #' + NodeComms.channel.toLowerCase().replace(/\s+/g, '-') + ' — links auto-detected';
+    renderChat(); renderMembers();
+  };
+  renderAll();
+
+  // Simulated speaking pulses for other members while in voice
+  simTimer = setInterval(() => {
+    if (!NodeComms.joined) return;
+    mlist.querySelectorAll('.cm-member').forEach(u => {
+      if (u.dataset.uid === NodeProfiles.homeId) return;
+      const pref = NodeComms.userPrefs[u.dataset.uid];
+      if (pref && pref.muted) return;
+      if (Math.random() < 0.12) {
+        u.classList.add('speaking');
+        setTimeout(() => u.classList.remove('speaking'), 600 + Math.random() * 1200);
+      }
+    });
+  }, 1000);
+
+  // Cleanup when window closes — find the comms window and observe removal
+  // (Simple approach: rely on garbage collection; intervals will idle harmlessly.)
+  // For thorough cleanup we'd hook into closeWindow.
+
+  return root;
+}
+
+/* ============================================================
+   NODE PRESENCE — live cursor sync (scaffolding for Phase 4)
+   Publishes normalized mouse position to /presence/{uid}.
+   Subscribes to all others and renders a labeled cursor per peer.
+   ============================================================ */
+const NodePresence = {
+  PUBLISH_HZ: 20,            // updates per second
+  ref: null,
+  myRef: null,
+  cursors: {},               // uid -> { el, lastTs }
+  lastPublish: 0,
+  initialized: false,
+
+  init() {
+    if (this.initialized) return;
+    if (!fbDb || !fbUser) return;
+    this.initialized = true;
+
+    const home = NodeProfiles.home();
+    const initial = {
+      name:  home?.name  || 'NODE',
+      color: home?.color || '#B89A5C',
+      x: 0.5, y: 0.5,
+      ts: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    this.myRef = fbDb.ref('presence/' + fbUser.uid);
+    this.myRef.set(initial).catch(e => console.warn('[NODE] Presence set failed:', e));
+    // Auto-clear when this tab closes / disconnects
+    this.myRef.onDisconnect().remove();
+
+    // Subscribe to all peers
+    this.ref = fbDb.ref('presence');
+    this.ref.on('child_added',   (snap) => this.renderCursor(snap.key, snap.val()));
+    this.ref.on('child_changed', (snap) => this.renderCursor(snap.key, snap.val()));
+    this.ref.on('child_removed', (snap) => this.removeCursor(snap.key));
+
+    // Mouse tracking (throttled)
+    document.addEventListener('mousemove', (e) => this.publishCursor(e));
+    // Re-publish on window blur/focus so peers see you wake up
+    window.addEventListener('focus', () => this.publishIdentity());
+    console.log('[NODE] Presence online for', fbUser.uid);
+  },
+
+  publishIdentity() {
+    if (!this.myRef) return;
+    const home = NodeProfiles.home();
+    this.myRef.update({
+      name:  home?.name  || 'NODE',
+      color: home?.color || '#B89A5C'
+    }).catch(() => {});
+  },
+
+  publishCursor(e) {
+    if (!this.myRef) return;
+    const now = Date.now();
+    const minDelta = 1000 / this.PUBLISH_HZ;
+    if (now - this.lastPublish < minDelta) return;
+    this.lastPublish = now;
+    const home = NodeProfiles.home();
+    this.myRef.update({
+      x: e.clientX / window.innerWidth,
+      y: e.clientY / window.innerHeight,
+      name:  home?.name  || 'NODE',
+      color: home?.color || '#B89A5C'
+    }).catch(() => { /* swallow noise */ });
+  },
+
+  renderCursor(uid, data) {
+    if (!data || uid === fbUser?.uid) return; // skip self
+    let entry = this.cursors[uid];
+    if (!entry) {
+      const el = document.createElement('div');
+      el.className = 'remote-cursor';
+      el.innerHTML = '<span class="rc-arrow"></span><span class="rc-chip"><span class="rc-dot"></span><span class="rc-name"></span></span>';
+      document.body.appendChild(el);
+      entry = this.cursors[uid] = { el };
+    }
+    entry.el.querySelector('.rc-dot').style.background  = data.color || '#888';
+    entry.el.querySelector('.rc-arrow').style.borderColor = data.color || '#888';
+    entry.el.querySelector('.rc-name').textContent = data.name || '???';
+    const x = (data.x ?? 0.5) * window.innerWidth;
+    const y = (data.y ?? 0.5) * window.innerHeight;
+    entry.el.style.transform = `translate(${x}px, ${y}px)`;
+  },
+
+  removeCursor(uid) {
+    const entry = this.cursors[uid];
+    if (entry) { entry.el.remove(); delete this.cursors[uid]; }
+  }
+};
+
+/* ============================================================
+   NODE ICONS — per-app icon overrides + right-click customization
+   ============================================================ */
+const NodeIcons = {
+  STORAGE_KEY: 'node-icons-v1',
+  DEFAULTS: {
+    files:   '📁',
+    notes:   '📝',
+    paint:   '🎨',
+    browser: '🌐',
+    comms:   '💬'
+  },
+  overrides: {},
+
+  init() {
+    try { this.overrides = JSON.parse(localStorage.getItem(this.STORAGE_KEY)) || {}; }
+    catch { this.overrides = {}; }
+    this.apply();
+  },
+
+  iconFor(app) {
+    return this.overrides[app] || this.DEFAULTS[app] || '◌';
+  },
+
+  apply() {
+    document.querySelectorAll('.icon[data-app]').forEach(icon => {
+      const app = icon.dataset.app;
+      const glyph = icon.querySelector('.glyph');
+      if (glyph) glyph.textContent = this.iconFor(app);
+    });
+  },
+
+  set(app, icon) {
+    this.overrides[app] = icon;
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.overrides));
+    this.apply();
+  },
+
+  reset(app) {
+    delete this.overrides[app];
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.overrides));
+    this.apply();
+  }
+};
+
+const ICON_OPTIONS = [
+  '📁','📂','🗂','📋','📑','📃','📄','📝','✎','✏','🖊',
+  '🎨','🖌','🖍','🖼','📷','📸','🎬','🎞','📽','🎭',
+  '🌐','🌍','🌏','💬','🗨','📧','✉','📞','📡',
+  '🎵','🎶','🎸','🎹','🎷','🥁',
+  '⚙','🔧','🔨','🔩','💡','🔋','🖥','💻','⌨','🖱',
+  '🎮','🕹','🎲','🎯','♟','🃏',
+  '⭐','✨','🔥','💎','💠','🌟','☀','🌙','☁','⚡','🌈',
+  '🚀','✈','🛸','🌸','🌿','🍃','🌊','🏔','🗿','🏛',
+  '☕','🍵','🍕','🍩','🍓','🍒','🍎'
+];
+
+function setupIconContextMenu() {
+  document.querySelectorAll('.icon[data-app]').forEach(icon => {
+    if (icon._ctxWired) return;
+    icon._ctxWired = true;
+    icon.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const app = icon.dataset.app;
+      showContextMenu(e.clientX, e.clientY, [
+        { label: 'Open',         action: () => openApp(app) },
+        { sep: true },
+        { label: 'Change Icon',  action: () => promptChangeIcon(app) },
+        { label: 'Reset Icon',   action: () => NodeIcons.reset(app), disabled: !NodeIcons.overrides[app] }
+      ]);
+    });
+  });
+}
+
+function promptChangeIcon(app) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width: 480px;">
+      <div class="modal-title">CHANGE ICON — ${escapeHtml(app.toUpperCase())}</div>
+      <div class="modal-body">
+        Pick a new icon. Your choice saves locally and shows up next time you open NODE.
+        <div class="icon-picker" id="icon-picker-grid"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="ic-reset">Reset to default</button>
+        <button id="ic-cancel" class="primary">Done</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const grid = overlay.querySelector('#icon-picker-grid');
+  const current = NodeIcons.iconFor(app);
+  ICON_OPTIONS.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'icon-opt' + (opt === current ? ' current' : '');
+    btn.textContent = opt;
+    btn.onclick = () => {
+      NodeIcons.set(app, opt);
+      overlay.querySelectorAll('.icon-opt').forEach(b => b.classList.remove('current'));
+      btn.classList.add('current');
+    };
+    grid.appendChild(btn);
+  });
+  overlay.querySelector('#ic-reset').onclick = () => { NodeIcons.reset(app); overlay.remove(); };
+  overlay.querySelector('#ic-cancel').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+}
+
+/* ============================================================
+   CLOCK
+   ============================================================ */
+function tickClock() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('clock').textContent =
+    pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+/* ============================================================
+   NODE PROFILES — multi-instance system
+   Each profile = own name, color, filesystem, open windows.
+   Persisted in localStorage. Scaffolding for Phase 4 multiplayer.
+   ============================================================ */
+const NodeProfiles = {
+  STORAGE_KEY: 'node-profiles-v1',
+  ACTIVE_KEY:  'node-active-profile',
+  HOME_KEY:    'node-home-profile',  // the "you" profile
+  COLORS: ['#FF6A1A','#E53935','#FBC02D','#43A047','#1E88E5','#8E24AA','#00ACC1','#FF80AB','#5D4037','#90A4AE','#26A69A','#7E57C2','#EC407A','#7CB342','#FB8C00','#0A0A0A'],
+
+  list: [],
+  activeId: null,
+  homeId: null,
+
+  init() {
+    // Load
+    try { this.list = JSON.parse(localStorage.getItem(this.STORAGE_KEY)) || []; }
+    catch { this.list = []; }
+    this.activeId = localStorage.getItem(this.ACTIVE_KEY);
+    this.homeId   = localStorage.getItem(this.HOME_KEY);
+
+    // First boot — create default + migrate any legacy FS
+    if (this.list.length === 0) {
+      const id = this.genId();
+      // Migrate legacy NodeFS (pre-profile) into this default profile
+      const legacy = localStorage.getItem('node-fs-v1');
+      if (legacy) {
+        localStorage.setItem('node-fs-v1:' + id, legacy);
+        localStorage.removeItem('node-fs-v1');
+      }
+      this.list.push({
+        id, name: 'NODE',
+        color: this.COLORS[0],
+        createdAt: Date.now(),
+        windowState: []
+      });
+      this.activeId = id;
+      this.homeId = id;
+      this.persist();
+    }
+    if (!this.activeId || !this.list.find(p => p.id === this.activeId)) {
+      this.activeId = this.list[0].id;
+    }
+    if (!this.homeId || !this.list.find(p => p.id === this.homeId)) {
+      this.homeId = this.activeId;
+    }
+    this.persist();
+  },
+
+  genId() { return 'p_' + Math.random().toString(36).slice(2, 10); },
+
+  persist() {
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.list));
+    localStorage.setItem(this.ACTIVE_KEY, this.activeId);
+    localStorage.setItem(this.HOME_KEY, this.homeId);
+  },
+
+  active() { return this.list.find(p => p.id === this.activeId); },
+  home()   { return this.list.find(p => p.id === this.homeId); },
+  isSpectating() { return this.activeId !== this.homeId; },
+
+  create({ name, color }) {
+    const id = this.genId();
+    const p = { id, name, color, createdAt: Date.now(), windowState: [] };
+    this.list.push(p);
+    this.persist();
+    return p;
+  },
+
+  rename(id, newName) {
+    const p = this.list.find(x => x.id === id);
+    if (!p) return false;
+    p.name = newName;
+    this.persist();
+    return true;
+  },
+
+  remove(id) {
+    if (this.list.length <= 1) return false;
+    if (this.homeId === id) return false; // can't delete your home
+    this.list = this.list.filter(p => p.id !== id);
+    localStorage.removeItem('node-fs-v1:' + id);
+    if (this.activeId === id) this.setActive(this.list[0].id, { skipReload: false });
+    this.persist();
+    return true;
+  },
+
+  recordOpenApps() {
+    const p = this.active();
+    if (!p) return;
+    p.windowState = Object.entries(openWindows).map(([id, w]) => {
+      // Try to recover app name from id
+      let app = id.split(':')[0]; // e.g., "paint", "notes", "viewer", "files"
+      let opts = {};
+      if (id.startsWith('notes:') || id.startsWith('viewer:')) {
+        opts.path = id.split(':').slice(1).join(':');
+      }
+      return { id, app, opts, title: w.taskEl?.textContent || '' };
+    });
+    this.persist();
+  },
+
+  setActive(id, { skipReload = false } = {}) {
+    if (id === this.activeId) return;
+    // Save outgoing profile's window state
+    this.recordOpenApps();
+    this.activeId = id;
+    this.persist();
+    if (!skipReload) reloadActiveProfile();
+  }
+};
+
+function reloadActiveProfile() {
+  // Close all open windows
+  Object.keys(openWindows).slice().forEach(id => closeWindow(id));
+  // Reload FS from the new profile's key
+  NodeFS.init();
+  // Re-open the new profile's saved windows
+  const p = NodeProfiles.active();
+  (p?.windowState || []).forEach(w => {
+    try { openApp(w.app, w.opts || {}); } catch (e) { /* swallow */ }
+  });
+  // Refresh chip + banner + cursor
+  renderUserChip();
+  updateSpecBanner();
+  updateCursorLabel();
+  // If instances popup was open, re-render it
+  if (document.getElementById('instances-popup').classList.contains('open')) {
+    renderInstancesList();
+  }
+}
+
+/* ============================================================
+   USER CHIP + INSTANCES POPUP
+   ============================================================ */
+function renderUserChip() {
+  const chip = document.getElementById('user-chip');
+  const p = NodeProfiles.active();
+  if (!p) return;
+  chip.querySelector('.ch-dot').style.background = p.color;
+  chip.querySelector('.ch-name').textContent = p.name;
+}
+
+function toggleInstances(e) {
+  if (e) e.stopPropagation();
+  const popup = document.getElementById('instances-popup');
+  const chip = document.getElementById('user-chip');
+  const isOpen = popup.classList.toggle('open');
+  chip.classList.toggle('open', isOpen);
+  // close start menu if open
+  document.getElementById('start-menu').classList.remove('open');
+  if (isOpen) renderInstancesList();
+}
+
+function renderInstancesList() {
+  const list = document.getElementById('instances-list');
+  list.innerHTML = '';
+  NodeProfiles.list.forEach(p => {
+    const isActive = p.id === NodeProfiles.activeId;
+    const isHome   = p.id === NodeProfiles.homeId;
+    const apps = (p.windowState || []).map(w => `<span class="app-tag">${escapeHtml(w.app)}</span>`).join('');
+    const item = document.createElement('div');
+    item.className = 'ip-item' + (isActive ? ' active' : '');
+    item.innerHTML = `
+      <div class="ip-row">
+        <div class="ip-dot" style="background:${p.color}"></div>
+        <div class="ip-name">${escapeHtml(p.name)}</div>
+        ${isHome ? '<span class="ip-tag">YOU</span>' : ''}
+        ${isActive && !isHome ? '<span class="ip-tag">VIEWING</span>' : ''}
+        <div class="ip-actions">
+          <button class="ip-act" data-act="rename" title="Rename">✎</button>
+          <button class="ip-act danger" data-act="delete" title="Delete" ${isHome ? 'disabled style="opacity:0.3;cursor:not-allowed"' : ''}>×</button>
+        </div>
+      </div>
+      <div class="ip-apps">${apps || '<span class="none">no apps open</span>'}</div>
+    `;
+    // Click row → switch (unless clicking an action button)
+    item.addEventListener('click', (ev) => {
+      if (ev.target.closest('.ip-act')) return;
+      if (isActive) return;
+      NodeProfiles.setActive(p.id);
+      document.getElementById('instances-popup').classList.remove('open');
+      document.getElementById('user-chip').classList.remove('open');
+    });
+    // Rename
+    item.querySelector('[data-act="rename"]').addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      const name = await nodePrompt('Rename Instance', 'New name:', p.name, '');
+      if (!name) return;
+      NodeProfiles.rename(p.id, name);
+      renderInstancesList();
+      renderUserChip();
+      updateCursorLabel();
+      updateSpecBanner();
+    });
+    // Delete
+    item.querySelector('[data-act="delete"]').addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      if (isHome) return;
+      const ok = await nodeConfirm('Delete Instance', `Delete "${p.name}"?\nAll its files will be lost.\nThis cannot be undone.`);
+      if (!ok) return;
+      const wasActive = isActive;
+      NodeProfiles.remove(p.id);
+      if (wasActive) reloadActiveProfile();
+      renderInstancesList();
+      renderUserChip();
+    });
+    list.appendChild(item);
+  });
+}
+
+async function promptCreateInstance() {
+  // Custom modal with color picker
+  let chosenColor = NodeProfiles.COLORS[Math.floor(Math.random() * NodeProfiles.COLORS.length)];
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-title">CREATE INSTANCE</div>
+      <div class="modal-body">
+        Each instance gets its own desktop, files, and cursor color. Useful for
+        sharing your machine with friends — and the scaffolding for real
+        multiplayer when we hit Phase 4.
+        <input type="text" id="ci-name" placeholder="Instance name (e.g. alex)" maxlength="20" />
+        <div class="ci-colors" id="ci-colors"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="ci-cancel">Cancel</button>
+        <button class="primary" id="ci-create">Create</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const colorsWrap = overlay.querySelector('#ci-colors');
+  NodeProfiles.COLORS.forEach(c => {
+    const sw = document.createElement('div');
+    sw.className = 'ci-color' + (c === chosenColor ? ' sel' : '');
+    sw.style.background = c;
+    sw.onclick = () => {
+      chosenColor = c;
+      overlay.querySelectorAll('.ci-color').forEach(x => x.classList.remove('sel'));
+      sw.classList.add('sel');
+    };
+    colorsWrap.appendChild(sw);
+  });
+
+  const nameInput = overlay.querySelector('#ci-name');
+  setTimeout(() => nameInput.focus(), 30);
+
+  return new Promise((resolve) => {
+    const finish = (created) => {
+      overlay.remove();
+      resolve(created);
+    };
+    overlay.querySelector('#ci-cancel').onclick = () => finish(null);
+    overlay.querySelector('#ci-create').onclick = () => {
+      const name = nameInput.value.trim();
+      if (!name) { nameInput.focus(); return; }
+      const p = NodeProfiles.create({ name, color: chosenColor });
+      // After creating, switch to the new instance so user can set it up
+      NodeProfiles.setActive(p.id);
+      renderInstancesList();
+      finish(p);
+    };
+    nameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') overlay.querySelector('#ci-create').click();
+      if (e.key === 'Escape') finish(null);
+    });
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(null); });
+  });
+}
+
+function returnToHome() {
+  if (!NodeProfiles.isSpectating()) return;
+  NodeProfiles.setActive(NodeProfiles.homeId);
+}
+
+function updateSpecBanner() {
+  const banner = document.getElementById('spec-banner');
+  if (NodeProfiles.isSpectating()) {
+    document.getElementById('sb-name').textContent = NodeProfiles.active().name;
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+/* ============================================================
+   CUSTOM CURSOR LABEL
+   ============================================================ */
+function initCursorTracking() {
+  const cursor = document.getElementById('me-cursor');
+  document.addEventListener('mousemove', (e) => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top = e.clientY + 'px';
+    if (!cursor.classList.contains('show')) cursor.classList.add('show');
+  });
+  document.addEventListener('mouseleave', () => cursor.classList.remove('show'));
+  updateCursorLabel();
+}
+
+function updateCursorLabel() {
+  const cursor = document.getElementById('me-cursor');
+  const p = NodeProfiles.active();
+  if (!p) return;
+  cursor.querySelector('.cur-dot').style.background = p.color;
+  cursor.querySelector('.cur-name').textContent = p.name;
+}
+
+/* ============================================================
+   CLOSE POPUPS WHEN CLICKING ELSEWHERE
+   ============================================================ */
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#instances-popup') && !e.target.closest('#user-chip')) {
+    document.getElementById('instances-popup').classList.remove('open');
+    document.getElementById('user-chip').classList.remove('open');
+  }
+});
+
+/* ============================================================
+   WELCOME SCREEN — name, avatar colour, language
+   ============================================================ */
+function initWelcome() {
+  const overlay = document.getElementById('welcome');
+  const colorsEl = document.getElementById('wc-colors');
+  const nameInput = document.getElementById('wc-name');
+  const langSelect = document.getElementById('wc-lang');
+  const form = document.getElementById('wc-form');
+
+  // Soft museum palette for avatars
+  const colors = ['#D4A862', '#6B8AAB', '#A55742', '#6F8A6F', '#A983A8', '#C2A579'];
+  const home = NodeProfiles.home();
+  let chosen = colors.includes(home?.color) ? home.color : colors[0];
+
+  // Render colour swatches
+  colorsEl.innerHTML = '';
+  colors.forEach(c => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'wc-color' + (c === chosen ? ' sel' : '');
+    btn.style.background = c;
+    btn.onclick = () => {
+      chosen = c;
+      colorsEl.querySelectorAll('.wc-color').forEach(x => x.classList.remove('sel'));
+      btn.classList.add('sel');
+    };
+    colorsEl.appendChild(btn);
+  });
+
+  // Restore language preference
+  const savedLang = localStorage.getItem('node-lang') || 'en';
+  langSelect.value = savedLang;
+  langSelect.onchange = (e) => localStorage.setItem('node-lang', e.target.value);
+
+  // Pre-fill name if profile already has one set (not the default)
+  if (home && home.name && home.name !== 'NODE') nameInput.value = home.name;
+
+  // Decide whether to show or skip
+  const alreadyWelcomed = localStorage.getItem('node-welcomed') === '1';
+  if (alreadyWelcomed) {
+    overlay.classList.add('hidden');
+  } else {
+    setTimeout(() => nameInput.focus(), 300);
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = nameInput.value.trim() || 'NODE';
+    // Update home profile's name + colour
+    NodeProfiles.rename(NodeProfiles.homeId, name);
+    const homeP = NodeProfiles.home();
+    if (homeP) {
+      homeP.color = chosen;
+      NodeProfiles.persist();
+    }
+    // If active === home, reflect the colour change everywhere
+    renderUserChip();
+    updateCursorLabel();
+    updateSpecBanner();
+    // Push the new identity to peers if we're online
+    if (window.NodePresence && NodePresence.publishIdentity) NodePresence.publishIdentity();
+    // Mark welcomed
+    localStorage.setItem('node-welcomed', '1');
+    overlay.classList.add('hidden');
+  });
+}
+
+function showWelcome() {
+  // Pre-fill from current home profile so they can edit
+  const home = NodeProfiles.home();
+  const nameInput = document.getElementById('wc-name');
+  if (home && nameInput) nameInput.value = home.name === 'NODE' ? '' : home.name;
+  document.getElementById('welcome').classList.remove('hidden');
+  setTimeout(() => nameInput?.focus(), 100);
+}
+
+/* ============================================================
+   BOOT — initialize profiles, then filesystem, then UI
+   ============================================================ */
+NodeProfiles.init();
+NodeFS.init();
+NodeComms.init();
+renderUserChip();
+updateCursorLabel();
+updateSpecBanner();
+initCursorTracking();
+// Restore the active profile's previously-open apps
+(NodeProfiles.active()?.windowState || []).forEach(w => {
+  try { openApp(w.app, w.opts || {}); } catch (e) { /* swallow */ }
+});
+
+// Apply icon overrides + wire right-click customization
+NodeIcons.init();
+setupIconContextMenu();
+
+// Show welcome / first-run intro
+initWelcome();
+
+/* ============================================================
+   KEYBOARD
+   ============================================================ */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'F11') return; // let browser handle
+  if (e.key === 'Escape') document.getElementById('start-menu').classList.remove('open');
+});
+</script>
+</body>
+</html>
