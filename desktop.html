@@ -2337,6 +2337,7 @@ function buildPaintApp() {
 
         <div class="tool-group">
           <div class="label">Canvas</div>
+          <button class="tool-btn" id="paint-undo">Undo</button>
           <button class="tool-btn danger" id="paint-clear">Clear</button>
           <button class="tool-btn primary" id="paint-save">Save PNG</button>
         </div>
@@ -2389,6 +2390,16 @@ function wirePaint(root) {
   let drawing = false;
   let last = null;
 
+  // Undo history (up to 30 steps)
+  const undoStack = [];
+  const MAX_UNDO = 30;
+  function saveSnapshot() {
+    undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+  }
+  // Save initial blank state
+  saveSnapshot();
+
   // Preset swatches
   const presets = ['#0A0A0A','#FFFFFF','#FF6A1A','#E53935','#FBC02D','#43A047','#1E88E5','#8E24AA','#00ACC1','#5D4037','#FF80AB','#90A4AE'];
   presets.forEach(c => {
@@ -2421,9 +2432,17 @@ function wirePaint(root) {
     status.querySelector('span:last-child').textContent = tool.toUpperCase();
   }));
 
+  const undoBtn = root.querySelector('#paint-undo');
+  undoBtn.addEventListener('click', () => {
+    if (undoStack.length <= 1) return; // keep the blank initial state
+    undoStack.pop(); // discard current
+    ctx.putImageData(undoStack[undoStack.length - 1], 0, 0);
+  });
+
   clearBtn.addEventListener('click', async () => {
     const ok = await nodeConfirm('Paint.node', 'Clear the canvas?');
     if (!ok) return;
+    saveSnapshot();
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   });
@@ -2460,6 +2479,7 @@ function wirePaint(root) {
   }
 
   function start(e) {
+    saveSnapshot();
     drawing = true;
     last = pos(e);
     drawDot(last);
