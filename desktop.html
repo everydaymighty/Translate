@@ -1902,6 +1902,345 @@
     width: 7px; height: 7px;
     flex-shrink: 0;
   }
+  /* Remote cursor clickable for spectate */
+  .remote-cursor { cursor: pointer; }
+  .remote-cursor:hover .rc-chip { background: var(--accent); color: var(--ink); }
+  .remote-cursor .rc-owner-crown {
+    font-size: 9px;
+    margin-left: 2px;
+    filter: drop-shadow(0 0 2px gold);
+  }
+
+  /* ============================================================
+     OWNER BADGE — taskbar indicator
+     ============================================================ */
+  #owner-badge {
+    background: var(--accent);
+    color: var(--ink);
+    border: none;
+    border-left: 1.5px solid var(--ink);
+    border-right: 1.5px solid var(--ink);
+    padding: 0 12px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    font-weight: bold;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  #owner-badge.show { display: flex; }
+  #owner-badge:hover { background: var(--ink); color: var(--accent); }
+  #owner-badge .ob-crown { font-size: 13px; }
+
+  /* ============================================================
+     ADMIN PANEL APP
+     ============================================================ */
+  .admin-app { display: flex; flex-direction: column; flex: 1; min-height: 0; font-family: var(--mono); }
+  .admin-header {
+    background: var(--ink);
+    color: var(--accent);
+    padding: 10px 14px;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .admin-header .ah-crown { font-size: 16px; }
+  .admin-header .ah-refresh {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
+  .admin-header .ah-refresh:hover { background: var(--accent); color: var(--ink); }
+  .admin-body { flex: 1; overflow-y: auto; background: var(--bg-2); }
+  .admin-user {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .admin-user .au-dot {
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--ink);
+    flex-shrink: 0;
+  }
+  .admin-user .au-name {
+    flex: 1;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  .admin-user .au-tag {
+    background: var(--accent);
+    color: var(--ink);
+    padding: 2px 6px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    font-weight: bold;
+  }
+  .admin-user .au-act {
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 4px 10px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .admin-user .au-act:hover { background: var(--accent); }
+  .admin-user .au-act.danger:hover { background: #E53935; color: var(--panel); }
+  .admin-user .au-act:active { transform: translate(2px,2px); box-shadow: 0 0 0; }
+  .admin-footer {
+    background: var(--ink);
+    color: rgba(255,255,255,0.5);
+    padding: 6px 14px;
+    font-size: 9px;
+    letter-spacing: 2px;
+  }
+
+  /* ============================================================
+     SPECTATE OVERLAY (read-only curtain when watching someone)
+     ============================================================ */
+  #spectate-overlay {
+    position: fixed;
+    inset: 0 0 36px 0;
+    z-index: 99990;
+    pointer-events: none; /* transparent by default */
+    display: none;
+  }
+  #spectate-overlay.show {
+    display: block;
+    pointer-events: all;  /* blocks input */
+    cursor: not-allowed;
+  }
+  #net-spec-banner {
+    position: fixed;
+    bottom: 36px;
+    left: 0; right: 0;
+    background: rgba(42,36,27,0.85);
+    backdrop-filter: blur(4px);
+    color: var(--panel);
+    padding: 8px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    z-index: 99991;
+    display: none;
+    align-items: center;
+    gap: 14px;
+    text-transform: uppercase;
+    border-top: 2px solid var(--accent);
+  }
+  #net-spec-banner.show { display: flex; }
+  #net-spec-banner .nsb-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    animation: pulseDot 1.2s infinite;
+    flex-shrink: 0;
+  }
+  #net-spec-banner .nsb-stop {
+    margin-left: auto;
+    background: var(--accent);
+    color: var(--ink);
+    border: none;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    text-transform: uppercase;
+    pointer-events: all;
+  }
+  #net-spec-banner .nsb-stop:hover { background: var(--panel); }
+
+  /* ============================================================
+     BEING WATCHED INDICATOR
+     ============================================================ */
+  #watched-indicator {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    background: var(--ink);
+    color: var(--accent);
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    z-index: 99995;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    border: 1.5px solid var(--accent);
+    box-shadow: 0 0 12px rgba(184,154,92,0.3);
+    animation: watchPulse 3s ease-in-out infinite;
+  }
+  #watched-indicator.show { display: flex; }
+  @keyframes watchPulse {
+    0%, 100% { box-shadow: 0 0 12px rgba(184,154,92,0.3); }
+    50% { box-shadow: 0 0 24px rgba(184,154,92,0.6); }
+  }
+
+  /* ============================================================
+     MAIN DESKTOP APP
+     ============================================================ */
+  .main-app { display: flex; flex-direction: column; flex: 1; min-height: 0; position: relative; }
+  .main-toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    background: var(--bg-2);
+    border-bottom: 1.5px solid var(--ink);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--ink);
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .main-toolbar .mt-dot {
+    width: 8px; height: 8px;
+    background: var(--good);
+    box-shadow: 0 0 6px var(--good);
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: pulseDot 2s infinite;
+  }
+  .main-toolbar .mt-info { flex: 1; color: var(--ink-2); }
+  .main-tbtn {
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    padding: 4px 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-transform: uppercase;
+    color: var(--ink);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .main-tbtn:hover { background: var(--accent); }
+  .main-tbtn:active { transform: translate(2px,2px); box-shadow: 0 0 0; }
+  .main-canvas {
+    flex: 1;
+    position: relative;
+    background:
+      linear-gradient(135deg, transparent 49.6%, rgba(184,154,92,0.05) 49.6%, rgba(184,154,92,0.05) 50.4%, transparent 50.4%) 0 0/80px 80px,
+      linear-gradient(0deg, rgba(42,36,27,0.02) 1px, transparent 1px) 0 0/30px 30px,
+      linear-gradient(90deg, rgba(42,36,27,0.02) 1px, transparent 1px) 0 0/30px 30px,
+      var(--bg-2);
+    overflow: hidden;
+  }
+  /* Sticky notes on main desktop */
+  .main-note {
+    position: absolute;
+    min-width: 160px;
+    max-width: 300px;
+    background: var(--panel);
+    border: 1.5px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    font-family: var(--mono);
+    font-size: 11px;
+    cursor: grab;
+    user-select: none;
+  }
+  .main-note:active { cursor: grabbing; }
+  .main-note .mn-header {
+    background: var(--ink);
+    color: var(--accent);
+    padding: 4px 8px;
+    font-size: 9px;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .main-note .mn-del {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0;
+  }
+  .main-note .mn-del:hover { color: #E53935; }
+  .main-note .mn-body {
+    padding: 8px;
+  }
+  .main-note textarea {
+    width: 100%;
+    min-height: 60px;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink);
+    resize: vertical;
+    line-height: 1.5;
+    letter-spacing: 0.3px;
+  }
+  /* Main desktop icons */
+  .main-icon {
+    position: absolute;
+    width: 72px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 6px 4px;
+    transition: background 0.15s;
+  }
+  .main-icon:hover { background: rgba(248,244,233,0.7); }
+  .main-icon .mi-glyph {
+    font-size: 28px;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .main-icon .mi-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--ink);
+    text-transform: uppercase;
+    word-break: break-word;
+  }
+  /* "Add note" / "Add icon" drag handles */
+  .main-add-note {
+    position: absolute;
+    bottom: 14px; right: 14px;
+    background: var(--accent);
+    border: 1.5px solid var(--ink);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 8px 14px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink);
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  .main-add-note:hover { background: var(--ink); color: var(--accent); }
+  .main-add-note:active { transform: translate(2px,2px); box-shadow: 0 0 0; }
 </style>
 </head>
 <body>
@@ -1963,6 +2302,10 @@
       <div class="glyph">💬</div>
       <div class="label">COMMS</div>
     </div>
+    <div class="icon" data-app="main" ondblclick="openApp('main')" onclick="selectIcon(this)" style="--bob-delay:2.0s">
+      <div class="glyph">🏛</div>
+      <div class="label">MAIN</div>
+    </div>
   </div>
 </div>
 
@@ -1984,6 +2327,9 @@
   <div class="item" onclick="openApp('comms'); toggleStart()">
     <span class="ic">◈</span> COMMS
   </div>
+  <div class="item" onclick="openApp('main'); toggleStart()">
+    <span class="ic">🏛</span> MAIN DESKTOP
+  </div>
   <div class="item" onclick="document.documentElement.requestFullscreen(); toggleStart()">
     <span class="ic">⛶</span> FULLSCREEN
   </div>
@@ -2001,6 +2347,9 @@
 <!-- =================== TASKBAR =================== -->
 <div id="taskbar">
   <button id="start-btn" onclick="toggleStart()">START</button>
+  <button id="owner-badge" onclick="openApp('admin')" title="You are the Owner — open Admin Panel">
+    <span class="ob-crown">♛</span> OWNER
+  </button>
   <button id="user-chip" onclick="toggleInstances(event)" title="Switch instance">
     <span class="ch-dot"></span>
     <span class="ch-name">NODE</span>
@@ -2039,6 +2388,21 @@
 <div id="me-cursor">
   <span class="cur-dot"></span>
   <span class="cur-name">NODE</span>
+</div>
+
+<!-- =================== NETWORK SPECTATE OVERLAY =================== -->
+<div id="spectate-overlay"></div>
+<div id="net-spec-banner">
+  <span class="nsb-dot"></span>
+  <span>SPECTATING <strong id="nsb-name"></strong></span>
+  <button class="nsb-stop" onclick="NodeNetSpectate.stop()">✕ STOP</button>
+</div>
+
+<!-- =================== BEING WATCHED INDICATOR =================== -->
+<div id="watched-indicator">
+  <span>👁</span>
+  <span id="watched-by-name">someone</span>
+  <span style="color:rgba(255,255,255,0.45);font-size:9px">IS WATCHING</span>
 </div>
 
 <script>
@@ -2105,6 +2469,103 @@ const NodeSocket = (() => {
 })();
 
 // NodePresence and NodeComms wire themselves in after they are defined (see bottom of script)
+
+/* ============================================================
+   NODE OWNER — server-side owner status + admin panel
+   ============================================================ */
+const NodeOwner = {
+  isOwner: false,
+  ownerUid: null,
+
+  init(socket) {
+    socket.on('you_joined', (msg) => {
+      this.isOwner = !!msg.isOwner;
+      this.ownerUid = msg.ownerUid;
+      this._updateBadge();
+    });
+    socket.on('promoted_owner', () => {
+      this.isOwner = true;
+      this._updateBadge();
+      nodeAlert('NODE OWNER', '♛ You have been promoted to Owner.\n\nYou can now access the Admin Panel to manage users.');
+    });
+  },
+
+  _updateBadge() {
+    const badge = document.getElementById('owner-badge');
+    if (badge) badge.classList.toggle('show', this.isOwner);
+  }
+};
+
+/* ============================================================
+   NODE NET SPECTATE — watch another live user's cursor/presence
+   (shows a read-only overlay + tracks their cursor label)
+   ============================================================ */
+const NodeNetSpectate = {
+  active: false,
+  targetUid: null,
+  targetName: null,
+
+  start(uid, name, socket) {
+    if (this.active) this.stop();
+    this.active = true;
+    this.targetUid = uid;
+    this.targetName = name;
+    socket.send({ type: 'spectate_start', targetUid: uid });
+    // Show overlay + banner
+    document.getElementById('spectate-overlay').classList.add('show');
+    document.getElementById('net-spec-banner').classList.add('show');
+    document.getElementById('nsb-name').textContent = name;
+    // Flash the target's cursor
+    const entry = NodePresence.cursors[uid];
+    if (entry) {
+      entry.el.style.boxShadow = '0 0 0 3px var(--accent)';
+      entry.el.style.borderRadius = '4px';
+    }
+  },
+
+  stop() {
+    if (!this.active) return;
+    this.active = false;
+    const uid = this.targetUid;
+    this.targetUid = null;
+    this.targetName = null;
+    if (window.NodeSocket) NodeSocket.send({ type: 'spectate_stop' });
+    document.getElementById('spectate-overlay').classList.remove('show');
+    document.getElementById('net-spec-banner').classList.remove('show');
+    // Remove glow from cursor
+    if (uid && NodePresence.cursors[uid]) {
+      NodePresence.cursors[uid].el.style.boxShadow = '';
+      NodePresence.cursors[uid].el.style.borderRadius = '';
+    }
+  },
+
+  initListeners(socket) {
+    socket.on('spectate_ack', (msg) => {
+      // confirm active
+    });
+    socket.on('spectate_ended', (msg) => {
+      if (this.active) {
+        nodeAlert('SPECTATE', 'Spectate ended: ' + (msg.reason || 'User disconnected.'));
+        this.stop();
+      }
+    });
+    socket.on('being_watched', (msg) => {
+      const ind = document.getElementById('watched-indicator');
+      const nameEl = document.getElementById('watched-by-name');
+      if (ind && nameEl) {
+        nameEl.textContent = (msg.isOwner ? '♛ ' : '') + (msg.watcherName || 'someone');
+        ind.classList.add('show');
+        // Auto-hide after 5s, re-show on new watcher
+        clearTimeout(this._watchTimer);
+        this._watchTimer = setTimeout(() => ind.classList.remove('show'), 5000);
+      }
+    });
+    socket.on('watch_ended', () => {
+      const ind = document.getElementById('watched-indicator');
+      if (ind) ind.classList.remove('show');
+    });
+  }
+};
 
 /* ============================================================
    WINDOW MANAGER
@@ -2297,6 +2758,25 @@ function openApp(name, opts = {}) {
       content: buildCommsApp(),
       width: 800,
       height: 560,
+    });
+  } else if (name === 'main') {
+    if (openWindows['main']) { focusWindow('main'); return; }
+    createWindow({
+      id: 'main',
+      title: 'Main.node — Shared Desktop',
+      content: buildMainApp(),
+      width: 860,
+      height: 560,
+    });
+  } else if (name === 'admin') {
+    if (!NodeOwner.isOwner) { nodeAlert('Admin Panel', 'Only the Owner can access the Admin Panel.'); return; }
+    if (openWindows['admin']) { focusWindow('admin'); return; }
+    createWindow({
+      id: 'admin',
+      title: 'Admin.node — Owner Panel',
+      content: buildAdminApp(),
+      width: 520,
+      height: 420,
     });
   }
 }
@@ -3559,6 +4039,227 @@ function buildBrowserApp(initialUrl = null) {
 }
 
 /* ============================================================
+   MAIN DESKTOP APP — shared bulletin board, server-persisted
+   ============================================================ */
+const NodeMainDesktop = {
+  notes: [],   // [{id,x,y,text}]
+  icons: [],   // [{id,x,y,emoji,label}]
+  _renderHook: null,
+
+  snapshot(data) {
+    this.notes = data.notes || [];
+    this.icons = data.icons || [];
+    if (this._renderHook) this._renderHook();
+  },
+
+  push() {
+    NodeSocket.send({ type: 'main_desktop_update', notes: this.notes, icons: this.icons });
+  },
+
+  addNote(x, y) {
+    const id = 'mn_' + Math.random().toString(36).slice(2, 8);
+    this.notes.push({ id, x, y, text: '' });
+    this.push();
+    if (this._renderHook) this._renderHook();
+    return id;
+  },
+
+  updateNote(id, text) {
+    const n = this.notes.find(n => n.id === id);
+    if (n) { n.text = text; this.push(); }
+  },
+
+  moveNote(id, x, y) {
+    const n = this.notes.find(n => n.id === id);
+    if (n) { n.x = x; n.y = y; this.push(); }
+  },
+
+  deleteNote(id) {
+    this.notes = this.notes.filter(n => n.id !== id);
+    this.push();
+    if (this._renderHook) this._renderHook();
+  }
+};
+
+function buildMainApp() {
+  const root = document.createElement('div');
+  root.style.display = 'flex';
+  root.style.flexDirection = 'column';
+  root.style.flex = '1';
+  root.style.minHeight = '0';
+
+  root.innerHTML = `
+    <div class="main-app">
+      <div class="main-toolbar">
+        <span class="mt-dot"></span>
+        <span>MAIN DESKTOP</span>
+        <span class="mt-info">— shared with everyone. changes sync in real-time.</span>
+        <button class="main-tbtn" data-act="clear" title="Clear all notes (you)">CLEAR ALL</button>
+      </div>
+      <div class="main-canvas" data-canvas>
+        <button class="main-add-note" data-act="add">+ ADD NOTE</button>
+      </div>
+    </div>
+  `;
+
+  const canvas = root.querySelector('[data-canvas]');
+  const addBtn = root.querySelector('[data-act="add"]');
+
+  function renderNotes() {
+    // Remove old notes
+    canvas.querySelectorAll('.main-note').forEach(e => e.remove());
+    // Remove old icons
+    canvas.querySelectorAll('.main-icon').forEach(e => e.remove());
+
+    NodeMainDesktop.notes.forEach(n => {
+      const el = document.createElement('div');
+      el.className = 'main-note';
+      el.style.left = Math.max(0, n.x) + 'px';
+      el.style.top  = Math.max(0, n.y) + 'px';
+      el.innerHTML = `
+        <div class="mn-header">
+          ● NOTE
+          <button class="mn-del" data-del="${escapeHtml(n.id)}" title="Delete note">✕</button>
+        </div>
+        <div class="mn-body">
+          <textarea placeholder="type something..." rows="3">${escapeHtml(n.text)}</textarea>
+        </div>
+      `;
+      // Drag note
+      let dragging = false, ox = 0, oy = 0;
+      const hdr = el.querySelector('.mn-header');
+      hdr.addEventListener('mousedown', (e) => {
+        if (e.target.dataset.del) return;
+        dragging = true;
+        const r = el.getBoundingClientRect();
+        const cr = canvas.getBoundingClientRect();
+        ox = e.clientX - r.left; oy = e.clientY - r.top;
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const cr = canvas.getBoundingClientRect();
+        const nx = Math.max(0, e.clientX - cr.left - ox);
+        const ny = Math.max(0, e.clientY - cr.top - oy);
+        el.style.left = nx + 'px'; el.style.top = ny + 'px';
+      });
+      document.addEventListener('mouseup', () => {
+        if (!dragging) return;
+        dragging = false;
+        NodeMainDesktop.moveNote(n.id, parseFloat(el.style.left), parseFloat(el.style.top));
+      });
+      // Edit text
+      const ta = el.querySelector('textarea');
+      ta.addEventListener('input', () => NodeMainDesktop.updateNote(n.id, ta.value));
+      // Delete
+      el.querySelector('[data-del]').addEventListener('click', () => NodeMainDesktop.deleteNote(n.id));
+      canvas.insertBefore(el, addBtn);
+    });
+  }
+
+  addBtn.addEventListener('click', () => {
+    const cr = canvas.getBoundingClientRect();
+    const x = 20 + Math.random() * Math.max(0, cr.width - 200);
+    const y = 20 + Math.random() * Math.max(0, cr.height - 120);
+    NodeMainDesktop.addNote(x, y);
+    renderNotes();
+  });
+
+  root.querySelector('[data-act="clear"]').addEventListener('click', async () => {
+    const ok = await nodeConfirm('Main Desktop', 'Clear ALL shared notes? This affects everyone.');
+    if (!ok) return;
+    NodeMainDesktop.notes = [];
+    NodeMainDesktop.push();
+    renderNotes();
+  });
+
+  // Hook for remote updates
+  NodeMainDesktop._renderHook = renderNotes;
+  renderNotes();
+  return root;
+}
+
+/* ============================================================
+   ADMIN PANEL APP — owner-only, live user list + kick
+   ============================================================ */
+function buildAdminApp() {
+  const root = document.createElement('div');
+  root.style.display = 'flex';
+  root.style.flexDirection = 'column';
+  root.style.flex = '1';
+  root.style.minHeight = '0';
+
+  root.innerHTML = `
+    <div class="admin-app">
+      <div class="admin-header">
+        <span class="ah-crown">♛</span>
+        ADMIN PANEL
+        <button class="ah-refresh" data-refresh>↻ REFRESH</button>
+      </div>
+      <div class="admin-body" data-body>
+        <div style="padding:20px;font-family:var(--mono);font-size:11px;color:var(--ink-2);letter-spacing:1px;">Loading...</div>
+      </div>
+      <div class="admin-footer">OWNER CONTROLS — changes affect all connected users</div>
+    </div>
+  `;
+
+  const body = root.querySelector('[data-body]');
+
+  function renderUsers(users) {
+    body.innerHTML = '';
+    if (!users || users.length === 0) {
+      body.innerHTML = '<div style="padding:20px;font-family:var(--mono);font-size:11px;color:var(--ink-2);letter-spacing:1px;">No users connected.</div>';
+      return;
+    }
+    users.forEach(u => {
+      const isSelf = u.uid === NodeSocket.uid();
+      const el = document.createElement('div');
+      el.className = 'admin-user';
+      el.innerHTML = `
+        <div class="au-dot" style="background:${escapeHtml(u.color || '#888')}"></div>
+        <div class="au-name">${escapeHtml(u.name || '???')}</div>
+        ${u.isOwner ? '<span class="au-tag">♛ OWNER</span>' : ''}
+        ${isSelf ? '<span class="au-tag" style="background:var(--good);">YOU</span>' : ''}
+        ${!isSelf && !u.isOwner ? `
+          <button class="au-act" data-watch="${escapeHtml(u.uid)}" data-name="${escapeHtml(u.name || '???')}">👁 WATCH</button>
+          <button class="au-act danger" data-kick="${escapeHtml(u.uid)}" data-name="${escapeHtml(u.name || '???')}">✕ KICK</button>
+        ` : ''}
+      `;
+      el.querySelectorAll('[data-watch]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const uid = btn.dataset.watch;
+          const name = btn.dataset.name;
+          NodeSocket.send({ type: 'owner_spectate', targetUid: uid });
+          NodeNetSpectate.start(uid, name, NodeSocket);
+          document.getElementById('admin') && focusWindow('admin');
+        });
+      });
+      el.querySelectorAll('[data-kick]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const name = btn.dataset.name;
+          const ok = await nodeConfirm('Admin Panel', `Kick "${name}" from the server?`);
+          if (!ok) return;
+          NodeSocket.send({ type: 'kick', targetUid: btn.dataset.kick, reason: 'Kicked by owner.' });
+        });
+      });
+      body.appendChild(el);
+    });
+  }
+
+  // Listen for admin snapshots while this window is open
+  const adminListener = (msg) => renderUsers(msg.users);
+  NodeSocket.on('admin_snapshot', adminListener);
+  // Request fresh data
+  NodeSocket.send({ type: 'admin_refresh' });
+
+  root.querySelector('[data-refresh]').addEventListener('click', () => {
+    NodeSocket.send({ type: 'admin_refresh' });
+  });
+
+  return root;
+}
+
+/* ============================================================
    COMMS — unified voice + chat + screen share
    ============================================================ */
 const NodeComms = {
@@ -4152,15 +4853,23 @@ const NodePresence = {
     if (!entry) {
       const el = document.createElement('div');
       el.className = 'remote-cursor';
-      el.innerHTML = '<span class="rc-arrow"></span><span class="rc-chip"><span class="rc-dot"></span><span class="rc-name"></span></span>';
+      el.innerHTML = '<span class="rc-arrow"></span><span class="rc-chip"><span class="rc-dot"></span><span class="rc-name"></span><span class="rc-owner-crown" style="display:none">♛</span></span>';
+      el.title = 'Click to spectate';
+      el.addEventListener('click', () => {
+        const name = entry.name || uid;
+        NodeNetSpectate.start(uid, name, NodeSocket);
+      });
       document.body.appendChild(el);
       entry = this.cursors[uid] = { el, name: data.name, color: data.color };
     }
     entry.name = data.name || '???';
     entry.color = data.color || '#888';
+    entry.isOwner = !!data.isOwner;
     entry.el.querySelector('.rc-dot').style.background = data.color || '#888';
     entry.el.querySelector('.rc-arrow').style.borderColor = data.color || '#888';
     entry.el.querySelector('.rc-name').textContent = data.name || '???';
+    const crown = entry.el.querySelector('.rc-owner-crown');
+    if (crown) crown.style.display = data.isOwner ? 'inline' : 'none';
     const x = (data.x ?? 0.5) * window.innerWidth;
     const y = (data.y ?? 0.5) * window.innerHeight;
     entry.el.style.transform = `translate(${x}px, ${y}px)`;
@@ -4195,7 +4904,9 @@ const NodeIcons = {
     notes:   '📝',
     paint:   '🎨',
     browser: '🌐',
-    comms:   '💬'
+    comms:   '💬',
+    main:    '🏛',
+    admin:   '♛'
   },
   overrides: {},
 
@@ -4736,6 +5447,15 @@ initWelcome();
 NodeSocket.on('open', () => {
   NodePresence.init();
   NodeComms.attachSocket(NodeSocket);
+  NodeOwner.init(NodeSocket);
+  NodeNetSpectate.initListeners(NodeSocket);
+  // Listen for main desktop sync
+  NodeSocket.on('main_desktop_snapshot', (msg) => NodeMainDesktop.snapshot(msg));
+  // Listen for kicked event
+  NodeSocket.on('kicked', (msg) => {
+    nodeAlert('NODE', 'You have been removed from this server.\n\n' + (msg.reason || ''));
+    setTimeout(() => window.location.reload(), 2000);
+  });
 });
 NodeSocket.on('offline', () => {
   const el = document.getElementById('online-count');
@@ -4745,6 +5465,9 @@ NodeSocket.on('offline', () => {
 if (NodeSocket._ready) {
   NodePresence.init();
   NodeComms.attachSocket(NodeSocket);
+  NodeOwner.init(NodeSocket);
+  NodeNetSpectate.initListeners(NodeSocket);
+  NodeSocket.on('main_desktop_snapshot', (msg) => NodeMainDesktop.snapshot(msg));
 }
 
 /* ============================================================
