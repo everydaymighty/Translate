@@ -2012,7 +2012,7 @@
   <div id="task-list"></div>
   <div id="tray">
     <span class="dot"></span>
-    <span id="online-count" style="color:var(--accent);cursor:pointer" title="Online now" onclick="openApp('comms')">1 ONLINE</span>
+    <span id="online-count" style="color:var(--accent);cursor:pointer" onclick="openApp('comms')" title="Online now">1 ONLINE</span>
     <span id="user-label">NODE</span>
     <span id="clock">--:--:--</span>
   </div>
@@ -2391,7 +2391,6 @@ function wirePaint(root) {
   let drawing = false;
   let last = null;
 
-  // Undo history
   const undoStack = [];
   function saveSnapshot() {
     undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
@@ -3690,18 +3689,7 @@ const NodeComms = {
   },
 
   members() {
-    const local = NodeProfiles.list.map(p => ({ ...p, isHome: p.id === NodeProfiles.homeId }));
-    // Add remote peers from presence (other browsers)
-    if (window.NodePresence && NodePresence.cursors) {
-      Object.entries(NodePresence.cursors).forEach(([uid, entry]) => {
-        const name = entry.el.querySelector('.rc-name')?.textContent || '???';
-        const color = entry.el.querySelector('.rc-dot')?.style.background || '#888';
-        if (!local.find(p => p.id === uid)) {
-          local.push({ id: uid, name, color, isHome: false, isRemote: true });
-        }
-      });
-    }
-    return local;
+    return NodeProfiles.list.map(p => ({ ...p, isHome: p.id === NodeProfiles.homeId }));
   },
 
   async enableMic() {
@@ -4191,9 +4179,11 @@ const NodePresence = {
       el.className = 'remote-cursor';
       el.innerHTML = '<span class="rc-arrow"></span><span class="rc-chip"><span class="rc-dot"></span><span class="rc-name"></span></span>';
       document.body.appendChild(el);
-      entry = this.cursors[uid] = { el };
+      entry = this.cursors[uid] = { el, name: data.name, color: data.color };
     }
-    entry.el.querySelector('.rc-dot').style.background  = data.color || '#888';
+    entry.name = data.name || '???';
+    entry.color = data.color || '#888';
+    entry.el.querySelector('.rc-dot').style.background = data.color || '#888';
     entry.el.querySelector('.rc-arrow').style.borderColor = data.color || '#888';
     entry.el.querySelector('.rc-name').textContent = data.name || '???';
     const x = (data.x ?? 0.5) * window.innerWidth;
@@ -4216,7 +4206,6 @@ const NodePresence = {
       el.textContent = total + ' ONLINE';
       el.style.color = peers > 0 ? 'var(--good)' : 'var(--accent)';
     }
-    // Refresh comms members list if open
     if (window.NodeComms && NodeComms._renderHook) NodeComms._renderHook();
   }
 };
@@ -4726,7 +4715,10 @@ function initWelcome() {
     updateCursorLabel();
     updateSpecBanner();
     // Push the new identity to peers if we're online
-    if (window.NodePresence && NodePresence.publishIdentity) NodePresence.publishIdentity();
+    if (window.NodePresence) {
+      if (!NodePresence.initialized && fbDb && fbUser) NodePresence.init();
+      if (NodePresence.publishIdentity) NodePresence.publishIdentity();
+    }
     // Mark welcomed
     localStorage.setItem('node-welcomed', '1');
     overlay.classList.add('hidden');
