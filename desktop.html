@@ -2070,8 +2070,10 @@ const NodeSocket = (() => {
   }
 
   function connect() {
+    const host = location.host || window.location.hostname;
+    if (!host) { reconnectTimer = setTimeout(connect, 1000); return; }
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    ws = new WebSocket(`${proto}://${location.host}`);
+    ws = new WebSocket(`${proto}://${host}`);
     ws.onopen = () => {
       console.log('[NODE] WebSocket connected');
       clearTimeout(reconnectTimer);
@@ -2094,18 +2096,15 @@ const NodeSocket = (() => {
   // Start connecting after DOM is ready
   setTimeout(connect, 200);
 
-  return { on, send, uid: () => _uid };
+  let _ready = false;
+  // expose for post-definition init check
+  const api = { on, send, uid: () => _uid, get _ready() { return _ready; } };
+  // mark ready on open
+  on('open', () => { _ready = true; });
+  return api;
 })();
 
-// Wire NodeSocket into NodePresence and NodeComms once they exist
-NodeSocket.on('open', () => {
-  if (window.NodePresence) NodePresence.init();
-  if (window.NodeComms)    NodeComms.attachSocket(NodeSocket);
-});
-NodeSocket.on('offline', () => {
-  const el = document.getElementById('online-count');
-  if (el) { el.textContent = '1 ONLINE'; el.style.color = 'var(--accent)'; }
-});
+// NodePresence and NodeComms wire themselves in after they are defined (see bottom of script)
 
 /* ============================================================
    WINDOW MANAGER
@@ -4730,6 +4729,23 @@ setupIconContextMenu();
 
 // Show welcome / first-run intro
 initWelcome();
+
+/* ============================================================
+   WEBSOCKET — wire presence + comms now that everything is defined
+   ============================================================ */
+NodeSocket.on('open', () => {
+  NodePresence.init();
+  NodeComms.attachSocket(NodeSocket);
+});
+NodeSocket.on('offline', () => {
+  const el = document.getElementById('online-count');
+  if (el) { el.textContent = '1 ONLINE'; el.style.color = 'var(--accent)'; }
+});
+// If socket already connected before this code ran, init immediately
+if (NodeSocket._ready) {
+  NodePresence.init();
+  NodeComms.attachSocket(NodeSocket);
+}
 
 /* ============================================================
    KEYBOARD
