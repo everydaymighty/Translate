@@ -7,10 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<!-- Firebase SDK (compat builds, loaded synchronously before the main script) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<!-- WebSocket multiplayer — no Firebase needed -->
 <!-- Google Custom Search Engine (explicit render so we can render per browser tab) -->
 <script>window.__gcse = { parsetags: 'explicit' };</script>
 <script async src="https://cse.google.com/cse.js?cx=c3720eb9b58dd4d8f"></script>
@@ -2049,37 +2046,66 @@
    FIREBASE — real-time sync backend (chat first; more layers later)
    Project: translate-f6414
    ============================================================ */
-const firebaseConfig = {
-  apiKey: "AIzaSyBYqhb_aENCZf4NvTObsytxrU6FSwDh7X4",
-  authDomain: "translate-f6414.firebaseapp.com",
-  databaseURL: "https://translate-f6414-default-rtdb.firebaseio.com",
-  projectId: "translate-f6414",
-  storageBucket: "translate-f6414.firebasestorage.app",
-  messagingSenderId: "831851071617",
-  appId: "1:831851071617:web:7f564fda611068169c6580"
-};
-let fbApp = null, fbAuth = null, fbDb = null, fbUser = null;
-try {
-  fbApp = firebase.initializeApp(firebaseConfig);
-  fbAuth = firebase.auth();
-  fbDb = firebase.database();
-  fbAuth.signInAnonymously().catch(err => console.warn('[NODE] Anonymous auth failed:', err));
-  fbAuth.onAuthStateChanged((user) => {
-    fbUser = user;
-    if (user && window.NodeComms && typeof NodeComms.attachFirebase === 'function') {
-      NodeComms.attachFirebase(fbDb, user);
-    }
-    if (user && window.NodePresence && typeof NodePresence.init === 'function') {
-      NodePresence.init();
-    }
-    if (user && window.NodeFS && typeof NodeFS.attachCloud === 'function') {
-      NodeFS.attachCloud(fbDb, user);
-    }
-    console.log('[NODE] Firebase auth:', user ? user.uid : 'signed out');
-  });
-} catch (e) {
-  console.warn('[NODE] Firebase init failed — running in local-only mode:', e);
-}
+/* ============================================================
+   NODE SOCKET — WebSocket connection to our own server.js
+   Replaces Firebase for presence (cursors) and chat.
+   ============================================================ */
+const NodeSocket = (() => {
+  // Generate a stable UID per browser (like Firebase anonymous auth)
+  let _uid = localStorage.getItem('node-uid');
+  if (!_uid) { _uid = 'u_' + Math.random().toString(36).slice(2, 10); localStorage.setItem('node-uid', _uid); }
+
+  let ws = null;
+  const listeners = {}; // type -> [fn]
+  let reconnectTimer = null;
+
+  function on(type, fn) {
+    (listeners[type] = listeners[type] || []).push(fn);
+  }
+  function emit(type, data) {
+    (listeners[type] || []).forEach(fn => fn(data));
+  }
+  function send(msg) {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+  }
+
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${proto}://${location.host}`);
+    ws.onopen = () => {
+      console.log('[NODE] WebSocket connected');
+      clearTimeout(reconnectTimer);
+      emit('open');
+      // Announce ourselves
+      const home = window.NodeProfiles?.home();
+      send({ type: 'join', uid: _uid, name: home?.name || 'NODE', color: home?.color || '#B89A5C' });
+    };
+    ws.onmessage = (e) => {
+      try { const msg = JSON.parse(e.data); emit(msg.type, msg); } catch {}
+    };
+    ws.onclose = () => {
+      console.log('[NODE] WebSocket closed — reconnecting in 3s');
+      emit('offline');
+      reconnectTimer = setTimeout(connect, 3000);
+    };
+    ws.onerror = () => ws.close();
+  }
+
+  // Start connecting after DOM is ready
+  setTimeout(connect, 200);
+
+  return { on, send, uid: () => _uid };
+})();
+
+// Wire NodeSocket into NodePresence and NodeComms once they exist
+NodeSocket.on('open', () => {
+  if (window.NodePresence) NodePresence.init();
+  if (window.NodeComms)    NodeComms.attachSocket(NodeSocket);
+});
+NodeSocket.on('offline', () => {
+  const el = document.getElementById('online-count');
+  if (el) { el.textContent = '1 ONLINE'; el.style.color = 'var(--accent)'; }
+});
 
 /* ============================================================
    WINDOW MANAGER
@@ -3543,10 +3569,8 @@ const NodeComms = {
   PREFS_KEY: 'node-voice-prefs-v1',
   messages: {},
   userPrefs: {},
-  // Firebase
-  fbDb: null,
-  fbUser: null,
-  _channelOff: null,
+  // WebSocket
+  _socket: null,
   _renderHook: null,
   // Voice state
   micStream: null,
@@ -3584,72 +3608,43 @@ const NodeComms = {
 
   msgList() { return this.messages[this.channel] || []; },
 
-  // ----- Firebase sync layer -----
+  // ----- WebSocket sync layer -----
   channelSlug(name) {
     return String(name || this.channel).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   },
 
-  attachFirebase(db, user) {
-    this.fbDb = db;
-    this.fbUser = user;
-    this.subscribeToChannel();
-  },
-
-  subscribeToChannel() {
-    if (!this.fbDb) return;
-    // Unsubscribe from any previous channel
-    if (this._channelOff) { try { this._channelOff(); } catch {} this._channelOff = null; }
-    const ref = this.fbDb.ref('channels/' + this.channelSlug() + '/messages').limitToLast(200);
-    const handler = (snap) => {
-      const key = snap.key;
-      const data = snap.val() || {};
-      const id = 'fb_' + key;
-      const arr = this.messages[this.channel] || (this.messages[this.channel] = []);
-      // Dedup
-      if (arr.find(m => m.id === id)) return;
-      arr.push({
-        id,
-        senderId: data.senderId,
-        senderName: data.senderName,
-        senderColor: data.senderColor,
-        text: data.text,
-        ts: typeof data.ts === 'number' ? data.ts : Date.now(),
-        system: !!data.system
-      });
-      // Keep time order (Firebase delivers in order, but be safe)
+  attachSocket(socket) {
+    this._socket = socket;
+    // Listen for incoming chat messages
+    socket.on('chat', (msg) => {
+      const arr = this.messages[msg.channel] || (this.messages[msg.channel] = []);
+      if (arr.find(m => m.id === msg.id)) return; // dedup
+      arr.push({ id: msg.id, senderId: msg.senderId, senderName: msg.senderName, senderColor: msg.senderColor, text: msg.text, ts: msg.ts, system: !!msg.system });
       arr.sort((a, b) => (a.ts || 0) - (b.ts || 0));
       if (arr.length > 200) arr.splice(0, arr.length - 200);
       this.saveChat();
       if (this._renderHook) this._renderHook();
-    };
-    ref.on('child_added', handler);
-    this._channelOff = () => ref.off('child_added', handler);
+    });
+    // Ask server for recent chat history for current channel
+    socket.send({ type: 'chat_history', channel: this.channelSlug() });
   },
 
   setChannel(name) {
     if (this.channel === name) return;
     this.channel = name;
-    this.subscribeToChannel();
+    if (this._socket) this._socket.send({ type: 'chat_history', channel: this.channelSlug(name) });
     if (this._renderHook) this._renderHook();
   },
 
   _push(payload) {
-    if (this.fbDb && this.fbUser) {
-      try {
-        return this.fbDb.ref('channels/' + this.channelSlug() + '/messages').push({
-          ...payload,
-          ts: firebase.database.ServerValue.TIMESTAMP
-        }).catch(err => {
-          console.warn('[NODE] Firebase push failed, falling back to local:', err);
-          this._pushLocal(payload);
-        });
-      } catch (e) {
-        this._pushLocal(payload);
-        return Promise.resolve();
-      }
+    const id = 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    const msg = { id, ts: Date.now(), channel: this.channelSlug(), ...payload };
+    if (this._socket) {
+      // Optimistic local add
+      this._pushLocal({ ...payload, id });
+      this._socket.send({ type: 'chat', ...msg });
     } else {
-      this._pushLocal(payload);
-      return Promise.resolve();
+      this._pushLocal({ ...payload, id });
     }
   },
 
@@ -3670,7 +3665,7 @@ const NodeComms = {
     if (!text) return;
     const p = NodeProfiles.list.find(x => x.id === profileId);
     this._push({
-      senderId: this.fbUser?.uid || profileId,
+      senderId: NodeSocket.uid(),
       senderName: p?.name || 'NODE',
       senderColor: p?.color || '#999',
       text
@@ -3681,7 +3676,7 @@ const NodeComms = {
     const p = NodeProfiles.home();
     this._push({
       system: true,
-      senderId: this.fbUser?.uid || NodeProfiles.homeId,
+      senderId: NodeSocket.uid(),
       senderName: p?.name || 'SYSTEM',
       senderColor: p?.color || '#888',
       text
@@ -4073,7 +4068,7 @@ function buildCommsApp() {
     renderMembers(); renderChat(); renderScreen(); refreshToolbar();
     if (NodeComms.joined) startMeter();
   }
-  // Live updates from Firebase: when a message arrives, refresh the chat feed.
+  // Live updates: when a message arrives via WebSocket, refresh the chat feed.
   NodeComms._renderHook = () => {
     if (!openWindows['comms']) return;
     chName.textContent = NodeComms.channel.toUpperCase();
@@ -4109,70 +4104,51 @@ function buildCommsApp() {
    Subscribes to all others and renders a labeled cursor per peer.
    ============================================================ */
 const NodePresence = {
-  PUBLISH_HZ: 20,            // updates per second
-  ref: null,
-  myRef: null,
-  cursors: {},               // uid -> { el, lastTs }
+  PUBLISH_HZ: 20,
+  cursors: {},
   lastPublish: 0,
   initialized: false,
 
   init() {
     if (this.initialized) return;
-    if (!fbDb || !fbUser) return;
     this.initialized = true;
 
-    const home = NodeProfiles.home();
-    const initial = {
-      name:  home?.name  || 'NODE',
-      color: home?.color || '#B89A5C',
-      x: 0.5, y: 0.5,
-      ts: firebase.database.ServerValue.TIMESTAMP
-    };
-
-    this.myRef = fbDb.ref('presence/' + fbUser.uid);
-    this.myRef.set(initial).catch(e => console.warn('[NODE] Presence set failed:', e));
-    // Auto-clear when this tab closes / disconnects
-    this.myRef.onDisconnect().remove();
-
-    // Subscribe to all peers
-    this.ref = fbDb.ref('presence');
-    this.ref.on('child_added',   (snap) => this.renderCursor(snap.key, snap.val()));
-    this.ref.on('child_changed', (snap) => this.renderCursor(snap.key, snap.val()));
-    this.ref.on('child_removed', (snap) => this.removeCursor(snap.key));
+    // Listen for presence events from server
+    NodeSocket.on('presence', (msg) => this.renderCursor(msg.uid, msg));
+    NodeSocket.on('presence_remove', (msg) => this.removeCursor(msg.uid));
+    NodeSocket.on('presence_snapshot', (msg) => {
+      // Server sends all current peers on join
+      (msg.peers || []).forEach(p => this.renderCursor(p.uid, p));
+    });
 
     // Mouse tracking (throttled)
     document.addEventListener('mousemove', (e) => this.publishCursor(e));
-    // Re-publish on window blur/focus so peers see you wake up
     window.addEventListener('focus', () => this.publishIdentity());
-    console.log('[NODE] Presence online for', fbUser.uid);
+    console.log('[NODE] Presence online for', NodeSocket.uid());
   },
 
   publishIdentity() {
-    if (!this.myRef) return;
     const home = NodeProfiles.home();
-    this.myRef.update({
-      name:  home?.name  || 'NODE',
-      color: home?.color || '#B89A5C'
-    }).catch(() => {});
+    NodeSocket.send({ type: 'presence', uid: NodeSocket.uid(), name: home?.name || 'NODE', color: home?.color || '#B89A5C' });
   },
 
   publishCursor(e) {
-    if (!this.myRef) return;
     const now = Date.now();
-    const minDelta = 1000 / this.PUBLISH_HZ;
-    if (now - this.lastPublish < minDelta) return;
+    if (now - this.lastPublish < 1000 / this.PUBLISH_HZ) return;
     this.lastPublish = now;
     const home = NodeProfiles.home();
-    this.myRef.update({
+    NodeSocket.send({
+      type: 'presence',
+      uid: NodeSocket.uid(),
       x: e.clientX / window.innerWidth,
       y: e.clientY / window.innerHeight,
       name:  home?.name  || 'NODE',
       color: home?.color || '#B89A5C'
-    }).catch(() => { /* swallow noise */ });
+    });
   },
 
   renderCursor(uid, data) {
-    if (!data || uid === fbUser?.uid) return; // skip self
+    if (!data || uid === NodeSocket.uid()) return; // skip self
     let entry = this.cursors[uid];
     if (!entry) {
       const el = document.createElement('div');
@@ -4715,9 +4691,8 @@ function initWelcome() {
     updateCursorLabel();
     updateSpecBanner();
     // Push the new identity to peers if we're online
-    if (window.NodePresence) {
-      if (!NodePresence.initialized && fbDb && fbUser) NodePresence.init();
-      if (NodePresence.publishIdentity) NodePresence.publishIdentity();
+    if (window.NodePresence && NodePresence.initialized) {
+      NodePresence.publishIdentity();
     }
     // Mark welcomed
     localStorage.setItem('node-welcomed', '1');
