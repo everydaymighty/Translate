@@ -2012,6 +2012,7 @@
   <div id="task-list"></div>
   <div id="tray">
     <span class="dot"></span>
+    <span id="online-count" style="color:var(--accent);cursor:pointer" title="Online now" onclick="openApp('comms')">1 ONLINE</span>
     <span id="user-label">NODE</span>
     <span id="clock">--:--:--</span>
   </div>
@@ -2390,14 +2391,12 @@ function wirePaint(root) {
   let drawing = false;
   let last = null;
 
-  // Undo history (up to 30 steps)
+  // Undo history
   const undoStack = [];
-  const MAX_UNDO = 30;
   function saveSnapshot() {
     undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    if (undoStack.length > MAX_UNDO) undoStack.shift();
+    if (undoStack.length > 30) undoStack.shift();
   }
-  // Save initial blank state
   saveSnapshot();
 
   // Preset swatches
@@ -2432,10 +2431,9 @@ function wirePaint(root) {
     status.querySelector('span:last-child').textContent = tool.toUpperCase();
   }));
 
-  const undoBtn = root.querySelector('#paint-undo');
-  undoBtn.addEventListener('click', () => {
-    if (undoStack.length <= 1) return; // keep the blank initial state
-    undoStack.pop(); // discard current
+  root.querySelector('#paint-undo').addEventListener('click', () => {
+    if (undoStack.length <= 1) return;
+    undoStack.pop();
     ctx.putImageData(undoStack[undoStack.length - 1], 0, 0);
   });
 
@@ -3692,7 +3690,18 @@ const NodeComms = {
   },
 
   members() {
-    return NodeProfiles.list.map(p => ({ ...p, isHome: p.id === NodeProfiles.homeId }));
+    const local = NodeProfiles.list.map(p => ({ ...p, isHome: p.id === NodeProfiles.homeId }));
+    // Add remote peers from presence (other browsers)
+    if (window.NodePresence && NodePresence.cursors) {
+      Object.entries(NodePresence.cursors).forEach(([uid, entry]) => {
+        const name = entry.el.querySelector('.rc-name')?.textContent || '???';
+        const color = entry.el.querySelector('.rc-dot')?.style.background || '#888';
+        if (!local.find(p => p.id === uid)) {
+          local.push({ id: uid, name, color, isHome: false, isRemote: true });
+        }
+      });
+    }
+    return local;
   },
 
   async enableMic() {
@@ -4190,11 +4199,25 @@ const NodePresence = {
     const x = (data.x ?? 0.5) * window.innerWidth;
     const y = (data.y ?? 0.5) * window.innerHeight;
     entry.el.style.transform = `translate(${x}px, ${y}px)`;
+    this._updateTray();
   },
 
   removeCursor(uid) {
     const entry = this.cursors[uid];
     if (entry) { entry.el.remove(); delete this.cursors[uid]; }
+    this._updateTray();
+  },
+
+  _updateTray() {
+    const peers = Object.keys(this.cursors).length;
+    const total = peers + 1;
+    const el = document.getElementById('online-count');
+    if (el) {
+      el.textContent = total + ' ONLINE';
+      el.style.color = peers > 0 ? 'var(--good)' : 'var(--accent)';
+    }
+    // Refresh comms members list if open
+    if (window.NodeComms && NodeComms._renderHook) NodeComms._renderHook();
   }
 };
 
